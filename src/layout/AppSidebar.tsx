@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-
+import { LayoutDashboard, Shield, Users, Grid, Stethoscope, CalendarClock, History, UserCircle, LogOut } from 'lucide-react';
 import {
   ChevronDownIcon,
   GridIcon,
@@ -23,14 +23,49 @@ const navItems: NavItem[] = [
   //   subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   // },
   {
-    icon: <GridIcon />,
+    icon: <LayoutDashboard />,
     name: "Dashboard",
     path: "/",
   },
   {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
+    icon: <Shield />,
+    name: "Admins",
+    path: "/admins",
+  },
+  {
+    icon: <Users />,
+    name: "Patients",
+    path: "/patients",
+  },
+  {
+    icon: <Grid />,
+    name: "Categories",
+    path: "/categories",
+  },
+  {
+    icon: <Stethoscope />,
+    name: "Doctors & Labs",
+    path: "/doctors-labs",
+  },
+  {
+    icon: <CalendarClock />,
+    name: "Slots",
+    path: "/slots",
+  },
+  {
+    icon: <History />,
+    name: "Booking History",
+    path: "/booking-history",
+  },
+  {
+    icon: <UserCircle />,
+    name: "Profile Settings",
     path: "/profile",
+  },
+  {
+    icon: <LogOut />,
+    name: "Logout",
+    path: "/logout",
   },
   // {
   //   name: "Pages",
