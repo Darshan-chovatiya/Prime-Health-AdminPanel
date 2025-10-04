@@ -128,7 +128,7 @@ export default function Home() {
             <div className="mb-6 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Appointments Overview</h3>
               <div className="flex space-x-2">
-                <button className="rounded-lg bg-brand-500 px-3 py-1 text-sm font-medium text-white">7 Days</button>
+                <button className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white">7 Days</button>
                 <button className="rounded-lg border border-gray-200 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">30 Days</button>
                 <button className="rounded-lg border border-gray-200 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">90 Days</button>
               </div>
@@ -150,7 +150,7 @@ export default function Home() {
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
-              <button className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">View All</button>
+              <button className="text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300">View All</button>
             </div>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
@@ -211,7 +211,7 @@ export default function Home() {
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
             <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full rounded-lg bg-brand-500 px-4 py-3 text-left text-sm font-medium text-white hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-600">
+              <button className="w-full rounded-lg bg-green-600 px-4 py-3 text-left text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
                 <div className="flex items-center">
                   <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

@@ -14,7 +14,7 @@ export default function Categories() {
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Service Categories
           </h3>
-          <button className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-600">
+          <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
             Add New Category
           </button>
         </div>
@@ -100,7 +100,7 @@ export default function Categories() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">12 Services</span>
                 <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                  <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                     Edit
                   </button>
                   <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
@@ -129,7 +129,7 @@ export default function Categories() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">8 Services</span>
                 <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                  <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                     Edit
                   </button>
                   <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
@@ -158,7 +158,7 @@ export default function Categories() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">15 Services</span>
                 <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                  <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                     Edit
                   </button>
                   <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
@@ -187,7 +187,7 @@ export default function Categories() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">10 Services</span>
                 <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                  <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                     Edit
                   </button>
                   <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
@@ -216,7 +216,7 @@ export default function Categories() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">14 Services</span>
                 <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                  <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                     Edit
                   </button>
                   <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
@@ -245,7 +245,7 @@ export default function Categories() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-gray-400">18 Services</span>
                 <div className="flex space-x-2">
-                  <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                  <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                     Edit
                   </button>
                   <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">

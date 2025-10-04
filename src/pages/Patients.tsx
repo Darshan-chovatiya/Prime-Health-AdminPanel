@@ -14,7 +14,7 @@ export default function Patients() {
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Patient Management
           </h3>
-          <button className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 dark:bg-brand-500 dark:hover:bg-brand-600">
+          <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
             Add New Patient
           </button>
         </div>
@@ -86,13 +86,13 @@ export default function Patients() {
                 <input
                   type="text"
                   placeholder="Search patients..."
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 pl-10 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 pl-10 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
                 />
                 <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <select className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+              <select className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
                 <option>All Status</option>
                 <option>Active</option>
                 <option>Inactive</option>
@@ -144,7 +144,7 @@ export default function Patients() {
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">2 days ago</td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                           View
                         </button>
                         <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
@@ -181,7 +181,7 @@ export default function Patients() {
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">1 week ago</td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                           View
                         </button>
                         <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
