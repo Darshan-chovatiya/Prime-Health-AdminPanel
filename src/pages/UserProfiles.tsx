@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Eye, EyeOff, UserCircle, Mail, Lock, CheckCircle, Calendar } from "lucide-react";
 import Label from "../components/form/Label";
 import Input from "../components/form/input/InputField";
-import Button from "../components/ui/button/Button";
 import Form from "../components/form/Form";
 
 interface UserProfile {
@@ -272,14 +271,19 @@ export default function UserProfiles() {
           )}
           
           <div className="mt-6">
-            <Button
-              type="submit"
-              disabled={isLoading.email}
-              className="w-full md:w-auto"
-            >
-              {isLoading.email ? "Updating..." : "Update Email"}
-            </Button>
-          </div>
+  <button
+    type="submit"
+    disabled={isLoading.email}
+    className={`w-full md:w-auto px-4 py-2 rounded-md font-medium transition-colors duration-200 
+      ${isLoading.email 
+        ? "bg-gray-300 text-gray-600 cursor-not-allowed" 
+        : "bg-green-600 hover:bg-green-700 text-white"
+      }`}
+  >
+    {isLoading.email ? "Updating..." : "Update Email"}
+  </button>
+</div>
+
         </Form>
       </div>
 
@@ -422,14 +426,19 @@ export default function UserProfiles() {
           )}
           
           <div className="mt-6">
-            <Button
-              type="submit"
-              disabled={isLoading.password}
-              className="w-full md:w-auto"
-            >
-              {isLoading.password ? "Changing Password..." : "Change Password"}
-            </Button>
-          </div>
+  <button
+    type="submit"
+    disabled={isLoading.password}
+    className={`w-full md:w-auto px-4 py-2 rounded-md font-medium transition-colors duration-200 
+      ${isLoading.password
+        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+        : "bg-green-600 hover:bg-green-700 text-white"
+      }`}
+  >
+    {isLoading.password ? "Changing Password..." : "Change Password"}
+  </button>
+</div>
+
         </Form>
       </div>
     </div>

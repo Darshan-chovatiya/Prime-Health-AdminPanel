@@ -3,9 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, Shield, Users, Grid, Stethoscope, CalendarClock, History, UserCircle, LogOut } from 'lucide-react';
 import {
   ChevronDownIcon,
-  GridIcon,
   HorizontaLDots,
-  UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import Swal from 'sweetalert2';
