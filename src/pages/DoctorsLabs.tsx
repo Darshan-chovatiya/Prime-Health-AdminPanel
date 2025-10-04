@@ -15,10 +15,10 @@ export default function DoctorsLabs() {
             Doctors & Labs Management
           </h3>
           <div className="flex space-x-3">
-            <button className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-600">
+            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
               Add Doctor
             </button>
-            <button className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-600">
+            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
               Add Lab
             </button>
           </div>

@@ -20,9 +20,9 @@ export default function SignInForm() {
           className="mx-auto"
         />
       </Link>
-      {/* <h1 className="mb-2 text-2xl font-bold text-gray-800 dark:text-white text-center">
+      <h1 className="mb-2 text-2xl font-bold text-gray-800 dark:text-white text-center">
         Welcome to Prime Health Admin
-      </h1> */}
+      </h1>
       <p className="mb-8 text-sm text-gray-500 dark:text-gray-400 text-center">
         Securely access your admin dashboard
       </p>
