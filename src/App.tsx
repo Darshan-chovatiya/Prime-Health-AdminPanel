@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { HashRouter, Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
@@ -15,7 +15,7 @@ import BookingHistory from "./pages/BookingHistory";
 export default function App() {
   return (
     <>
-      <Router>
+      <HashRouter>
         <ScrollToTop />
         <Routes>
           <Route element={<AppLayout />}>
@@ -35,7 +35,7 @@ export default function App() {
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
+      </HashRouter>
     </>
   );
 }
