@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, UserCircle, Mail, Lock, CheckCircle, Calendar, User } from "lucide-react";
+import { Eye, EyeOff, UserCircle, Mail, Lock, Calendar, User } from "lucide-react";
 import Swal from 'sweetalert2'; // Import SweetAlert2
 import Label from "../components/form/Label";
 import Input from "../components/form/input/InputField";

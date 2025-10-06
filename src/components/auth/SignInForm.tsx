@@ -81,7 +81,7 @@ export default function SignInForm() {
             type="email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
+            // required
           />
         </div>
         <div>
@@ -95,7 +95,7 @@ export default function SignInForm() {
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              // required
             />
             <button
               type="button"
