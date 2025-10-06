@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, Shield, Users, Grid, Stethoscope, CalendarClock, History, UserCircle, LogOut } from 'lucide-react';
 import {
   ChevronDownIcon,
-  GridIcon,
   HorizontaLDots,
-  UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import Swal from 'sweetalert2';
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  onClick?: () => void;
 };
 
-const navItems: NavItem[] = [
+const getNavItems = (handleLogout: () => void): NavItem[] => [
   // {
   //   icon: <GridIcon />,
   //   name: "Dashboard",
@@ -65,7 +65,7 @@ const navItems: NavItem[] = [
   {
     icon: <LogOut />,
     name: "Logout",
-    path: "/logout",
+    onClick: handleLogout,
   },
   // {
   //   name: "Pages",
@@ -82,6 +82,31 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You will be logged out of your account",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, logout!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      // Clear any stored data
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      
+      // Redirect to login page
+      navigate('/signin');
+    }
+  };
+
+  const navItems = getNavItems(handleLogout);
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -188,7 +213,7 @@ const AppSidebar: React.FC = () => {
               )}
             </button>
           ) : (
-            nav.path && (
+            nav.path ? (
               <Link
                 to={nav.path}
                 className={`menu-item group ${
@@ -208,7 +233,19 @@ const AppSidebar: React.FC = () => {
                   <span className="menu-item-text">{nav.name}</span>
                 )}
               </Link>
-            )
+            ) : nav.onClick ? (
+              <button
+                onClick={nav.onClick}
+                className={`menu-item group menu-item-inactive`}
+              >
+                <span className="menu-item-icon-size menu-item-icon-inactive">
+                  {nav.icon}
+                </span>
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <span className="menu-item-text">{nav.name}</span>
+                )}
+              </button>
+            ) : null
           )}
           {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
             <div
