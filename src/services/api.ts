@@ -336,7 +336,7 @@ class ApiService {
   }
 
   //catedories by service
-  async getCategoriesByService(params: PaginationParams & { status?: string } = {}): Promise<ApiResponse> {
+  async getCategoriesByService(params: PaginationParams & { status?: string ;  serviceId?: string;} = {}): Promise<ApiResponse> {
     return this.request('/doctors/categories', {
       body: JSON.stringify(params),
     });
