@@ -220,18 +220,19 @@ class ApiService {
 
   // Authentication
   async login(email: string, password: string): Promise<ApiResponse<{ token: string; admin: Admin }>> {
-    const response = await this.request('/login', {
-      body: JSON.stringify({ email, password }),
-    });
-    
-    if (response.data.token) {
-      this.token = response.data.token;
-      localStorage.setItem('authToken', this.token);
-      localStorage.setItem('user', JSON.stringify(response.data.admin));
-    }
-    
-    return response;
+  const response = await this.request('/login', {
+    body: JSON.stringify({ email, password }),
+  }) as ApiResponse<{ token: string; admin: Admin }>; // ✅ assert type
+
+  if (response.data.token) {
+    this.token = response.data.token;
+    localStorage.setItem('authToken', this.token);
+    localStorage.setItem('user', JSON.stringify(response.data.admin));
   }
+
+  return response;
+}
+
 
   async register(adminData: Partial<Admin> & { password: string }): Promise<ApiResponse<{ admin: Admin }>> {
     return this.request('/register', {
