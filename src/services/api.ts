@@ -121,6 +121,7 @@ export interface Doctor {
   createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
+  profileImage?: string;
 }
 
 
@@ -346,7 +347,7 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
   }
 
   //catedories by service
-  async getCategoriesByService(params: PaginationParams & { status?: string } = {}): Promise<ApiResponse> {
+  async getCategoriesByService(params: PaginationParams & { status?: string ;  serviceId?: string;} = {}): Promise<ApiResponse> {
     return this.request('/doctors/categories', {
       body: JSON.stringify(params),
     });
