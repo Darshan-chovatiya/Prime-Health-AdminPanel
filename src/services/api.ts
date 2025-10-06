@@ -121,6 +121,7 @@ export interface Doctor {
   createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
+  profileImage?: string;
 }
 
 
