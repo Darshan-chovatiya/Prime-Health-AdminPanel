@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Doctor } from "../../services/api";
+import { Doctor, apiService, Service, Category } from "../../services/api";
 
 interface DoctorModalProps {
   doctor?: Doctor;
@@ -14,16 +14,72 @@ export default function DoctorModal({ doctor, onClose, onSubmit, title }: Doctor
     email: "",
     mobileNo: "",
     license: "",
-    specialty: "",
+    specialty: "", // Category ID
     bio: "",
-    services: [] as string[],
+    services: "", // Single Service ID
     pricing: {
       consultationFee: 0,
       followUpFee: 0,
     },
     isActive: true,
   });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [servicesError, setServicesError] = useState<string | null>(null);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
 
+  // 🔹 Fetch all services only once
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await apiService.getServices({ limit: 100 });
+        if (response.status === 200 && response.data?.docs) {
+          const nonDeletedServices = response.data.docs.filter(
+            (service: Service) => !service.isDeleted
+          );
+          setServices(nonDeletedServices);
+          setServicesError(null);
+        } else {
+          setServicesError(response.message || "Failed to load services.");
+        }
+      } catch (error: any) {
+        console.error("Error fetching services:", error);
+        setServicesError(error.message || "Failed to load services. Please try again.");
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  // 🔹 Only fetch categories when a service is selected
+  useEffect(() => {
+    if (!formData.services) {
+      setCategories([]);
+      return;
+    }
+
+    const fetchCategories = async () => {
+      try {
+        const response = await apiService.getCategoriesByService({
+          limit: 100,
+          serviceId: formData.services, // pass serviceId in payload
+        });
+        if (response.status === 200 && response.data?.docs) {
+          setCategories(response.data.docs);
+          setCategoriesError(null);
+        } else {
+          setCategoriesError(response.message || "Failed to load categories.");
+        }
+      } catch (error: any) {
+        console.error("Error fetching categories:", error);
+        setCategoriesError(error.message || "Failed to load categories. Please try again.");
+      }
+    };
+
+    fetchCategories();
+  }, [formData.services]);
+
+  // 🔹 Prefill doctor data if editing
   useEffect(() => {
     if (doctor) {
       setFormData({
@@ -31,47 +87,39 @@ export default function DoctorModal({ doctor, onClose, onSubmit, title }: Doctor
         email: doctor.email || "",
         mobileNo: doctor.mobileNo,
         license: doctor.license,
-        specialty: doctor.specialty,
+        specialty: doctor.specialty?._id || "",
         bio: doctor.bio || "",
-        services: doctor.services || [],
+        services: doctor.services?._id || "",
         pricing: doctor.pricing || { consultationFee: 0, followUpFee: 0 },
         isActive: doctor.isActive,
       });
     }
   }, [doctor]);
+  
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.mobileNo || !formData.license || !formData.specialty) {
-      alert("Please fill in all required fields");
+
+    if (!formData.name || !formData.mobileNo || !formData.license || !formData.services || !formData.specialty) {
+      alert("Please fill in all required fields, including service and specialty");
       return;
     }
 
-    const submitData = doctor 
+    const submitData = doctor
       ? { id: doctor._id, ...formData }
       : formData;
 
-    onSubmit(submitData);
+    console.log("Submitting doctor data:", submitData);
+    try {
+      await onSubmit(submitData);
+    } catch (error: any) {
+      console.error("Error submitting doctor:", error);
+      alert(error.message || "Failed to submit doctor. Please try again.");
+    }
   };
 
-  const specialtyOptions = [
-    "Cardiology",
-    "Neurology", 
-    "Orthopedics",
-    "Dermatology",
-    "Pediatrics",
-    "Gynecology",
-    "Psychiatry",
-    "Radiology",
-    "Surgery",
-    "Emergency Medicine",
-    "Internal Medicine",
-    "Family Medicine"
-  ];
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
@@ -138,21 +186,59 @@ export default function DoctorModal({ doctor, onClose, onSubmit, title }: Doctor
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Specialty *
-              </label>
-              <select
-                value={formData.specialty}
-                onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                required
-              >
-                <option value="">Select Specialty</option>
-                {specialtyOptions.map((specialty) => (
-                  <option key={specialty} value={specialty}>{specialty}</option>
-                ))}
-              </select>
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Service *
+                </label>
+                {servicesError ? (
+                  <p className="text-red-500 text-sm">{servicesError}</p>
+                ) : services.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No services available.</p>
+                ) : (
+                  <select
+                    value={formData.services}
+                    onChange={(e) => setFormData({ ...formData, services: e.target.value, specialty: "" })}
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    required
+                  >
+                    <option value="">Select a Service</option>
+                    {services.map((service) => (
+                      <option key={service._id} value={service._id}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Specialty *
+                </label>
+                {categoriesError ? (
+                  <p className="text-red-500 text-sm">{categoriesError}</p>
+                ) : categories.length === 0 ? (
+                  <p className="text-gray-500 text-sm">
+                    {formData.services ? "No categories available for selected service." : "Select a service first."}
+                  </p>
+                ) : (
+                  <select
+                    value={formData.specialty}
+                    onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    required
+                    disabled={!formData.services} // Disable until a service is selected
+                  >
+                    <option value="">Select Specialty</option>
+                    {categories.map((category) => (
+                      <option key={category._id} value={category._id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             <div>
@@ -162,10 +248,12 @@ export default function DoctorModal({ doctor, onClose, onSubmit, title }: Doctor
               <input
                 type="number"
                 value={formData.pricing.consultationFee}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  pricing: { ...formData.pricing, consultationFee: parseFloat(e.target.value) || 0 }
-                })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    pricing: { ...formData.pricing, consultationFee: parseFloat(e.target.value) || 0 },
+                  })
+                }
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 min="0"
                 step="0.01"
@@ -180,10 +268,12 @@ export default function DoctorModal({ doctor, onClose, onSubmit, title }: Doctor
               <input
                 type="number"
                 value={formData.pricing.followUpFee}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  pricing: { ...formData.pricing, followUpFee: parseFloat(e.target.value) || 0 }
-                })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    pricing: { ...formData.pricing, followUpFee: parseFloat(e.target.value) || 0 },
+                  })
+                }
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 min="0"
                 step="0.01"
@@ -201,22 +291,6 @@ export default function DoctorModal({ doctor, onClose, onSubmit, title }: Doctor
               rows={3}
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
               placeholder="Brief description about the doctor..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Services (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={formData.services.join(', ')}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                services: e.target.value.split(',').map(s => s.trim()).filter(s => s)
-              })}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              placeholder="e.g., General Consultation, ECG, Blood Test"
             />
           </div>
 

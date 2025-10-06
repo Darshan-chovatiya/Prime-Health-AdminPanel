@@ -69,10 +69,20 @@ export interface Category {
   description: string;
   icon?: string;
   color?: string;
-  services: string[];
+  service: string;
   isActive: boolean;
   sortOrder: number;
   servicesCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Service {
+  _id: string;
+  name: string;
+  category: string;
+  description: string;
+  isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -83,9 +93,17 @@ export interface Doctor {
   email?: string;
   mobileNo: string;
   license: string;
-  specialty: string;
+  specialty: {
+    _id: string;
+    name: string;
+    description?: string;
+  };
   bio?: string;
-  services: string[];
+  services?: {
+    _id: string;
+    name: string;
+    description?: string;
+  };
   certifications?: Array<{
     name: string;
     document?: string;
@@ -96,11 +114,14 @@ export interface Doctor {
     consultationFee: number;
     followUpFee?: number;
   };
-  machineId?: string;
+  machineId?: string | null;
   isActive: boolean;
+  isDeleted?: boolean;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
 }
+
 
 export interface Slot {
   _id: string;
@@ -314,6 +335,13 @@ class ApiService {
     });
   }
 
+  //catedories by service
+  async getCategoriesByService(params: PaginationParams & { status?: string } = {}): Promise<ApiResponse> {
+    return this.request('/doctors/categories', {
+      body: JSON.stringify(params),
+    });
+  }
+
   async getCategory(id: string): Promise<ApiResponse<{ category: Category }>> {
     return this.request('/categories/get', {
       body: JSON.stringify({ id }),
@@ -340,6 +368,37 @@ class ApiService {
 
   async getCategoryStats(): Promise<ApiResponse> {
     return this.request('/categories/stats');
+  }
+
+  // Services
+  async getServices(params: PaginationParams & { status?: string; category?: string } = {}): Promise<ApiResponse<{ docs: Service[], totalDocs: number, limit: number, page: number }>> {
+    return this.request('/services', {
+      body: JSON.stringify(params),
+    });
+  }
+
+  async getService(id: string): Promise<ApiResponse<{ service: Service }>> {
+    return this.request('/services/get', {
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  async createService(serviceData: Partial<Service>): Promise<ApiResponse<{ service: Service }>> {
+    return this.request('/services/create', {
+      body: JSON.stringify(serviceData),
+    });
+  }
+
+  async updateService(serviceData: Partial<Service> & { id: string }): Promise<ApiResponse<{ service: Service }>> {
+    return this.request('/services/update', {
+      body: JSON.stringify(serviceData),
+    });
+  }
+
+  async deleteService(id: string): Promise<ApiResponse> {
+    return this.request('/services/delete', {
+      body: JSON.stringify({ id }),
+    });
   }
 
   // Doctors
