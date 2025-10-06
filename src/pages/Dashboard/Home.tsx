@@ -1,33 +1,60 @@
-// import PageMeta from "../../components/common/PageMeta";
-// import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import { useState, useEffect } from "react";
+import apiService, { DashboardStats } from "../../services/api";
+import Swal from 'sweetalert2';
 
 export default function Home() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getDashboardStats();
+        setStats(response.data);
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load dashboard data',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* <PageMeta
-        title="Dashboard | Prime Health"
-        description="Prime Health Admin Dashboard - Comprehensive healthcare management overview"
-      />
-      <PageBreadcrumb pageTitle="Dashboard" /> */}
-      
       {/* Welcome Section */}
-      {/* <div className="mb-8">
-        <div className="rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 p-6 text-white dark:from-brand-600 dark:to-brand-700">
+      <div className="mb-8">
+        <div className="rounded-2xl bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Welcome back, Admin!</h1>
-              <p className="mt-2 text-brand-100">Here's what's happening at Prime Health today.</p>
+              <p className="mt-2 text-green-100">Here's what's happening at Prime Health today.</p>
             </div>
             <div className="hidden md:block">
               <div className="text-right">
-                <p className="text-sm text-brand-100">Current Time</p>
+                <p className="text-sm text-green-100">Current Time</p>
                 <p className="text-lg font-semibold">{new Date().toLocaleTimeString()}</p>
-                <p className="text-sm text-brand-100">{new Date().toLocaleDateString()}</p>
+                <p className="text-sm text-green-100">{new Date().toLocaleDateString()}</p>
               </div>
             </div>
           </div>
         </div>
-      </div> */}
+      </div>
 
       {/* Key Metrics */}
       <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -36,13 +63,14 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Patients</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">2,847</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                {stats?.totalPatients?.toLocaleString() || '0'}
+              </p>
               <div className="mt-2 flex items-center">
                 <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">+12.5%</span>
-                <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">from last month</span>
+                <span className="ml-1 text-sm text-green-600 dark:text-green-400">Active</span>
               </div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-500/20">
@@ -58,13 +86,14 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Doctors</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">48</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                {stats?.totalDoctors?.toLocaleString() || '0'}
+              </p>
               <div className="mt-2 flex items-center">
                 <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">+3</span>
-                <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">this week</span>
+                <span className="ml-1 text-sm text-green-600 dark:text-green-400">Available</span>
               </div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 dark:bg-green-500/20">
@@ -80,12 +109,16 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Appointments</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">156</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                {stats?.todaysAppointments?.toLocaleString() || '0'}
+              </p>
               <div className="mt-2 flex items-center">
                 <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="ml-1 text-sm text-blue-600 dark:text-blue-400">89 available</span>
+                <span className="ml-1 text-sm text-blue-600 dark:text-blue-400">
+                  {stats?.availableSlotsToday || 0} available
+                </span>
               </div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-500/20">
@@ -101,13 +134,14 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Revenue</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">$124.5K</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                ${(stats?.monthlyRevenue || 0).toLocaleString()}
+              </p>
               <div className="mt-2 flex items-center">
                 <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">+8.2%</span>
-                <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">from last month</span>
+                <span className="ml-1 text-sm text-green-600 dark:text-green-400">This month</span>
               </div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/20">
@@ -121,83 +155,106 @@ export default function Home() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left Column - Charts and Activity */}
+        {/* Left Column - Recent Activity */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Appointments Chart */}
+          {/* Recent Bookings */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
             <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Appointments Overview</h3>
-              <div className="flex space-x-2">
-                <button className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white">7 Days</button>
-                <button className="rounded-lg border border-gray-200 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">30 Days</button>
-                <button className="rounded-lg border border-gray-200 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800">90 Days</button>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Bookings</h3>
+              <button className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700">
+                View All
+              </button>
             </div>
-            <div className="h-80">
-              {/* Chart Placeholder */}
-              <div className="flex h-full items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-900">
-                <div className="text-center">
+            <div className="space-y-4">
+              {stats?.recentBookings && stats.recentBookings.length > 0 ? (
+                stats.recentBookings.map((booking: any) => (
+                  <div key={booking._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-800">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-500/20">
+                        <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {booking.patientId?.name || 'Unknown Patient'}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {booking.doctorId?.name || 'Unknown Doctor'} • {booking.serviceId?.name || 'Service'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(booking.appointmentDate).toLocaleDateString()}
+                      </p>
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                        booking.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400' :
+                        booking.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400' :
+                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400'
+                      }`}>
+                        {booking.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
                   <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Chart visualization will be here</p>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No recent bookings</p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Right Column - Quick Actions and Stats */}
         <div className="space-y-6">
-          {/* Department Stats */}
+          {/* Quick Actions */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Department Overview</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Cardiology</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">12</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="h-3 w-3 rounded-full bg-blue-500"></div>
-                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Neurology</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">8</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Orthopedics</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">15</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="h-3 w-3 rounded-full bg-purple-500"></div>
-                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Dermatology</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">10</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="h-3 w-3 rounded-full bg-pink-500"></div>
-                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Pediatrics</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">14</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="h-3 w-3 rounded-full bg-orange-500"></div>
-                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Emergency</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">18</span>
-              </div>
+            <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
+            <div className="space-y-3">
+              <button className="w-full rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white hover:bg-green-700 transition-colors">
+                Add New Patient
+              </button>
+              <button className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
+                Schedule Appointment
+              </button>
+              <button className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
+                View Reports
+              </button>
+              <button className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
+                Manage Doctors
+              </button>
             </div>
           </div>
 
+          {/* System Status */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+            <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">System Status</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Total Bookings</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {stats?.totalBookings?.toLocaleString() || '0'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Categories</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {stats?.totalCategories?.toLocaleString() || '0'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Available Slots</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {stats?.availableSlotsToday?.toLocaleString() || '0'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
