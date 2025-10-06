@@ -1,14 +1,58 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
+import { useAuth } from "../../context/AuthContext";
+import Swal from 'sweetalert2';
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Please fill in all fields',
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await login(email, password);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Login successful!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      
+      navigate('/');
+    } catch (error: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Failed',
+        text: error.message || 'Invalid credentials',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="relative z-10 flex flex-col items-center">
       <Link to="/" className="">
@@ -26,12 +70,19 @@ export default function SignInForm() {
       <p className="mb-8 text-sm text-gray-500 dark:text-gray-400 text-center">
         Securely access your admin dashboard
       </p>
-      <form className="w-full space-y-6">
+      <form className="w-full space-y-6" onSubmit={handleSubmit}>
         <div>
           <Label htmlFor="email">
             Email <span className="text-red-500">*</span>
           </Label>
-          <Input id="email" placeholder="admin@primehealth.com" type="email" />
+          <Input 
+            id="email" 
+            placeholder="admin@primehealth.com" 
+            type="email" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
         <div>
           <Label htmlFor="password">
@@ -42,6 +93,9 @@ export default function SignInForm() {
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
             <button
               type="button"
@@ -70,8 +124,13 @@ export default function SignInForm() {
             Forgot password?
           </Link>
         </div>
-        <Button className="w-full bg-green-600 hover:bg-green-700 text-white mb-6" size="md">
-          Sign In
+        <Button 
+          className="w-full bg-green-600 hover:bg-green-700 text-white mb-6" 
+          size="md"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? 'Signing In...' : 'Sign In'}
         </Button>
       </form>
     </div>

@@ -6,6 +6,7 @@ import {
   HorizontaLDots,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { useAuth } from "../context/AuthContext";
 import Swal from 'sweetalert2';
 
 type NavItem = {
@@ -81,6 +82,7 @@ const othersItems: NavItem[] = [
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -97,12 +99,16 @@ const AppSidebar: React.FC = () => {
     });
 
     if (result.isConfirmed) {
-      // Clear any stored data
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      
-      // Redirect to login page
-      navigate('/signin');
+      try {
+        await logout();
+        navigate('/signin');
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Force logout even if API call fails
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        navigate('/signin');
+      }
     }
   };
 

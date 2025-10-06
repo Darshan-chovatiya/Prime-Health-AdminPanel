@@ -1,21 +1,214 @@
-// import PageBreadcrumb from "../components/common/PageBreadCrumb";
-// import PageMeta from "../components/common/PageMeta";
+import { useState, useEffect } from "react";
+import apiService, { Booking } from "../services/api";
+import Swal from 'sweetalert2';
 
 export default function BookingHistory() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [doctorFilter, setDoctorFilter] = useState("all");
+  const [patientFilter, setPatientFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchBookings();
+    fetchBookingStats();
+    fetchDoctors();
+    fetchPatients();
+  }, [currentPage, searchTerm, statusFilter, doctorFilter, patientFilter]);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getBookings({
+        page: currentPage,
+        limit: 10,
+        search: searchTerm,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
+        patientId: patientFilter === 'all' ? undefined : patientFilter,
+      });
+      
+      if (response.data && response.data.docs) {
+        setBookings(response.data.docs);
+        setTotalPages(response.data.totalPages || 1);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load bookings',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBookingStats = async () => {
+    try {
+      const response = await apiService.getBookingStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('Error fetching booking stats:', error);
+    }
+  };
+
+  const fetchDoctors = async () => {
+    try {
+      const response = await apiService.getDoctors({ limit: 100 });
+      if (response.data && response.data.docs) {
+        setDoctors(response.data.docs);
+      }
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+    }
+  };
+
+  const fetchPatients = async () => {
+    try {
+      const response = await apiService.getPatients({ limit: 100 });
+      if (response.data && response.data.docs) {
+        setPatients(response.data.docs);
+      }
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId: string, patientName: string) => {
+    const { value: reason } = await Swal.fire({
+      title: 'Cancel Booking',
+      text: `Cancel booking for ${patientName}?`,
+      input: 'textarea',
+      inputLabel: 'Reason for cancellation',
+      inputPlaceholder: 'Enter reason for cancellation...',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You need to provide a reason!'
+        }
+      },
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Cancel Booking',
+      cancelButtonText: 'Keep Booking'
+    });
+
+    if (reason) {
+      try {
+        await apiService.cancelBooking(bookingId, reason);
+        Swal.fire({
+          icon: 'success',
+          title: 'Cancelled!',
+          text: 'Booking has been cancelled.',
+        });
+        fetchBookings();
+        fetchBookingStats();
+      } catch (error: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'Failed to cancel booking',
+        });
+      }
+    }
+  };
+
+  const handleRescheduleBooking = async (bookingId: string, patientName: string) => {
+    const { value: newSlotId } = await Swal.fire({
+      title: 'Reschedule Booking',
+      text: `Reschedule booking for ${patientName}?`,
+      input: 'text',
+      inputLabel: 'New Slot ID',
+      inputPlaceholder: 'Enter new slot ID...',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You need to provide a new slot ID!'
+        }
+      },
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Reschedule',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (newSlotId) {
+      try {
+        await apiService.rescheduleBooking(bookingId, newSlotId, 'Admin rescheduled');
+        Swal.fire({
+          icon: 'success',
+          title: 'Rescheduled!',
+          text: 'Booking has been rescheduled.',
+        });
+        fetchBookings();
+        fetchBookingStats();
+      } catch (error: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'Failed to reschedule booking',
+        });
+      }
+    }
+  };
+
+  const exportBookings = async () => {
+    try {
+      const blob = await apiService.exportBookings({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
+      });
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `bookings-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Exported!',
+        text: 'Bookings exported successfully.',
+      });
+    } catch (error: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Failed to export bookings',
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* <PageMeta
-        title="Booking History | Prime Health"
-        description="View and manage appointment booking history for Prime Health system"
-      />
-      <PageBreadcrumb pageTitle="Booking History" /> */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
         <div className="mb-6 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Booking History
           </h3>
           <div className="flex space-x-3">
-            <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
+            <button 
+              onClick={exportBookings}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+            >
               Export Data
             </button>
             <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
@@ -31,7 +224,9 @@ export default function BookingHistory() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Total Bookings</p>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">2,847</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
+                    {stats?.totalBookings?.toLocaleString() || '0'}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/20">
                   <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +240,9 @@ export default function BookingHistory() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">2,156</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
+                    {stats?.completedBookings?.toLocaleString() || '0'}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20">
                   <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +256,9 @@ export default function BookingHistory() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Cancelled</p>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">234</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
+                    {stats?.cancelledBookings?.toLocaleString() || '0'}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/20">
                   <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +272,9 @@ export default function BookingHistory() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">No Show</p>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">89</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
+                    {stats?.noShowBookings?.toLocaleString() || '0'}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-100 dark:bg-yellow-500/20">
                   <svg className="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,41 +285,54 @@ export default function BookingHistory() {
             </div>
           </div>
 
-          {/* Filters */}
+          {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 items-center gap-4">
               <div className="relative flex-1 max-w-md">
                 <input
                   type="text"
                   placeholder="Search bookings..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 pl-10 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
                 />
                 <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <select className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
-                <option>All Status</option>
-                <option>Completed</option>
-                <option>Cancelled</option>
-                <option>No Show</option>
-                <option>Pending</option>
-              </select>
-              <select className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
-                <option>All Doctors</option>
-                <option>Dr. Sarah Wilson</option>
-                <option>Dr. Michael Chen</option>
-                <option>Dr. Emily Rodriguez</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
                 className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
-              />
-              <button className="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
-                Filter
-              </button>
+              >
+                <option value="all">All Status</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="no-show">No Show</option>
+                <option value="rescheduled">Rescheduled</option>
+              </select>
+              <select 
+                value={doctorFilter}
+                onChange={(e) => setDoctorFilter(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+              >
+                <option value="all">All Doctors</option>
+                {doctors.map((doctor) => (
+                  <option key={doctor._id} value={doctor._id}>Dr. {doctor.name}</option>
+                ))}
+              </select>
+              <select 
+                value={patientFilter}
+                onChange={(e) => setPatientFilter(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+              >
+                <option value="all">All Patients</option>
+                {patients.map((patient) => (
+                  <option key={patient._id} value={patient._id}>{patient.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -141,195 +355,139 @@ export default function BookingHistory() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  <tr>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">#BK001234</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <img className="h-8 w-8 rounded-full" src="/images/user/user-01.jpg" alt="Patient" />
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-800 dark:text-white/90">Sarah Johnson</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">sarah.johnson@email.com</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dr. Sarah Wilson</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Cardiologist</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dec 15, 2024</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">10:30 AM</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-800 dark:text-white/90">Cardiac Consultation</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-500/20 dark:text-green-400">
-                        Completed
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          View
-                        </button>
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          Reschedule
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">#BK001235</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <img className="h-8 w-8 rounded-full" src="/images/user/user-02.jpg" alt="Patient" />
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-800 dark:text-white/90">Michael Brown</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">michael.brown@email.com</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dr. Michael Chen</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Neurologist</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dec 14, 2024</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">2:00 PM</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-800 dark:text-white/90">Neurological Exam</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800 dark:bg-red-500/20 dark:text-red-400">
-                        Cancelled
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          View
-                        </button>
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          Reschedule
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">#BK001236</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <img className="h-8 w-8 rounded-full" src="/images/user/user-03.jpg" alt="Patient" />
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-800 dark:text-white/90">Emily Davis</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">emily.davis@email.com</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dr. Emily Rodriguez</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Orthopedist</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dec 13, 2024</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">11:00 AM</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Knee Consultation</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400">
-                        No Show
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          View
-                        </button>
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          Reschedule
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">#BK001237</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <img className="h-8 w-8 rounded-full" src="/images/user/user-04.jpg" alt="Patient" />
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-800 dark:text-white/90">David Wilson</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">david.wilson@email.com</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dr. Sarah Wilson</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Cardiologist</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Dec 12, 2024</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">3:30 PM</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800 dark:text-white/90">Follow-up Visit</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-500/20 dark:text-green-400">
-                        Completed
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          View
-                        </button>
-                        <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                          Reschedule
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  {bookings.length > 0 ? (
+                    bookings.map((booking) => {
+                      const doctor = doctors.find(d => d._id === booking.doctorId);
+                      const patient = patients.find(p => p._id === booking.patientId);
+                      return (
+                        <tr key={booking._id}>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-800 dark:text-white/90">
+                              #{booking.bookingId || booking._id.slice(-6).toUpperCase()}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 flex-shrink-0">
+                                {patient?.profileImage ? (
+                                  <img className="h-8 w-8 rounded-full" src={patient.profileImage} alt="Patient" />
+                                ) : (
+                                  <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-800 dark:text-white/90">
+                                  {patient?.name || 'Unknown Patient'}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {patient?.email || patient?.mobileNo || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-800 dark:text-white/90">
+                              {doctor ? `Dr. ${doctor.name}` : 'Unknown Doctor'}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {doctor?.specialty || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-800 dark:text-white/90">
+                              {new Date(booking.appointmentDate).toLocaleDateString()}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {booking.appointmentTime}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-800 dark:text-white/90">
+                              {booking.serviceId?.name || 'General Consultation'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                              booking.status === 'completed' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                                : booking.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                                : booking.status === 'no-show'
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400'
+                                : booking.status === 'confirmed'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-400'
+                            }`}>
+                              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex space-x-2">
+                              <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
+                                View
+                              </button>
+                              {booking.status !== 'completed' && booking.status !== 'cancelled' && (
+                                <>
+                                  <button 
+                                    onClick={() => handleRescheduleBooking(booking._id, patient?.name || 'Patient')}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                  >
+                                    Reschedule
+                                  </button>
+                                  <button 
+                                    onClick={() => handleCancelBooking(booking._id, patient?.name || 'Patient')}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                        No bookings found
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
             
             {/* Pagination */}
-            <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing 1 to 10 of 2,847 results
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
-                    Previous
-                  </button>
-                  <button className="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
-                    1
-                  </button>
-                  <button className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
-                    2
-                  </button>
-                  <button className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
-                    3
-                  </button>
-                  <button className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
-                    Next
-                  </button>
+            {totalPages > 1 && (
+              <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
