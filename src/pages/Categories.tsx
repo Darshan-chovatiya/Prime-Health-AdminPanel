@@ -284,7 +284,7 @@ export default function Categories() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-medium">{category.servicesCount || category.services?.length || 0}</span> services available
+                      <span className="font-medium">{category.servicesCount || category.service?.length || 0}</span> services available
                     </div>
                     <div className="flex space-x-2">
                       <button 
