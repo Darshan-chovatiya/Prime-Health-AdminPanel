@@ -4,7 +4,6 @@ import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
-import Button from "../ui/button/Button";
 import { useAuth } from "../../context/AuthContext";
 import Swal from 'sweetalert2';
 
@@ -124,14 +123,14 @@ export default function SignInForm() {
             Forgot password?
           </Link>
         </div>
-        <Button 
-          className="w-full bg-green-600 hover:bg-green-700 text-white mb-6" 
-          size="md"
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? 'Signing In...' : 'Sign In'}
-        </Button>
+<button
+  className="w-full bg-green-600 hover:bg-green-700 text-white mb-6 py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+  type="submit"
+  disabled={loading}
+>
+  {loading ? 'Signing In...' : 'Sign In'}
+</button>
+
       </form>
     </div>
   );

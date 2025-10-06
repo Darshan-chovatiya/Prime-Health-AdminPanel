@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:3200/api/admin';
+// const API_BASE_URL = 'http://localhost:3200/api/admin';
+const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
 // const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
 
 // Types
@@ -35,25 +36,25 @@ export interface Patient {
   mobileNo: string;
   dateOfBirth: string;
   gender: 'male' | 'female' | 'other';
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
   };
   emergencyContact?: {
     name: string;
     relationship: string;
     mobileNo: string;
   };
-  medicalHistory?: Array<{
+  medicalHistory: Array<{
     condition: string;
     diagnosis: string;
     treatment: string;
     date: string;
   }>;
-  allergies?: string[];
+  allergies: string[];
   bloodGroup?: string;
   profileImage?: string;
   isActive: boolean;
@@ -127,7 +128,7 @@ export interface Doctor {
 
 export interface Slot {
   _id: string;
-  doctorId: string;
+  doctorId: any;
   startTime: string;
   endTime: string;
   status: 'available' | 'booked' | 'blocked';
@@ -144,9 +145,9 @@ export interface Booking {
   _id: string;
   bookingId: string;
   patientId: string;
-  doctorId: string;
+  doctorId: any;
   slotId: string;
-  serviceId: string;
+  serviceId: any;
   appointmentDate: string;
   appointmentTime: string;
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
@@ -312,13 +313,13 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
     });
   }
 
-  async createPatient(patientData: Partial<Patient>): Promise<ApiResponse<{ patient: Patient }>> {
+  async createPatient(patientData: any): Promise<ApiResponse<{ patient: Patient }>> {
     return this.request('/patients/create', {
       body: JSON.stringify(patientData),
     });
   }
 
-  async updatePatient(patientData: Partial<Patient> & { id: string }): Promise<ApiResponse<{ patient: Patient }>> {
+  async updatePatient(patientData: any & { id: string }): Promise<ApiResponse<{ patient: Patient }>> {
     return this.request('/patients/update', {
       body: JSON.stringify(patientData),
     });

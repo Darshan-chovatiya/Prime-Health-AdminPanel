@@ -98,7 +98,7 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                 <option value="">Select Doctor</option>
                 {doctors.map((doctor) => (
                   <option key={doctor._id} value={doctor._id}>
-                    Dr. {doctor.name} - {doctor.specialty}
+                    Dr. {doctor.name} - {doctor?.specialty?.name || 'N/A'}
                   </option>
                 ))}
               </select>

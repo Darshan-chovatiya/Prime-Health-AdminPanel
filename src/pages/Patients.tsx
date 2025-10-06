@@ -273,7 +273,7 @@ export default function Patients() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      let response;
+      let response:any;
       if (showCreateModal) {
         response = await apiService.createPatient(formData);
       } else if (showEditModal && selectedPatient?._id) {

@@ -320,7 +320,9 @@ export default function Slots() {
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                   {slots.length > 0 ? (
                     slots.map((slot) => {
-                      const doctor = doctors.find(d => d._id === slot.doctorId?._id || slot.doctorId);
+                      console.log('Rendering slot:', slot);
+                      console.log('doctors list:', doctors);
+                      const doctor = doctors.find(d => d._id === slot?.doctorId?._id);
                       return (
                         <tr key={slot._id}>
                           <td className="px-6 py-4">
@@ -328,7 +330,7 @@ export default function Slots() {
                               {doctor ? `Dr. ${doctor.name}` : 'Unknown Doctor'}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {doctor?.specialty || 'N/A'}
+                              {doctor?.specialty?.name || 'N/A'}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-800 dark:text-white/90">

@@ -16,7 +16,7 @@ export default function DoctorsLabs() {
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [specialties, setSpecialties] = useState<any[]>([]);
 
-  const [activeTab, setActiveTab] = useState<"doctors" | "labs">("doctors");
+  // const [activeTab, setActiveTab] = useState<"doctors" | "labs">("doctors");
 
   useEffect(() => {
     fetchDoctors();
