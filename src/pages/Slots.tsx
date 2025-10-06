@@ -17,6 +17,11 @@ export default function Slots() {
   const [doctors, setDoctors] = useState<any[]>([]);
 
   useEffect(() => {
+    // Reset page to 1 when filters change
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, doctorFilter]);
+
+  useEffect(() => {
     fetchSlots();
     fetchSlotStats();
     fetchDoctors();
@@ -28,22 +33,26 @@ export default function Slots() {
       const response = await apiService.getSlots({
         page: currentPage,
         limit: 10,
-        search: searchTerm,
+        search: searchTerm || undefined,
         status: statusFilter === 'all' ? undefined : statusFilter,
         doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
       });
-      
-      if (response.data && response.data.docs) {
-        setSlots(response.data.docs);
+
+      if (response.status === 200 && response.data) {
+        setSlots(response.data.docs || []);
         setTotalPages(response.data.totalPages || 1);
+      } else {
+        throw new Error(response.message || 'Failed to load slots');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching slots:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Failed to load slots',
+        text: error.message || 'Failed to load slots',
       });
+      setSlots([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -52,20 +61,29 @@ export default function Slots() {
   const fetchSlotStats = async () => {
     try {
       const response = await apiService.getSlotStats();
-      setStats(response.data);
+      if (response.status === 200 && response.data) {
+        setStats({
+          totalSlotsToday: response.data.totalSlotsToday,
+          availableSlots: response.data.availableSlotsToday, // Fixed key name
+          bookedSlots: response.data.bookedSlotsToday, // Fixed key name
+          cancelledToday: response.data.cancelledSlotsToday // Fixed key name
+        });
+      }
     } catch (error) {
       console.error('Error fetching slot stats:', error);
+      setStats(null);
     }
   };
 
   const fetchDoctors = async () => {
     try {
       const response = await apiService.getDoctors({ limit: 100 });
-      if (response.data && response.data.docs) {
+      if (response.status === 200 && response.data?.docs) {
         setDoctors(response.data.docs);
       }
     } catch (error) {
       console.error('Error fetching doctors:', error);
+      setDoctors([]);
     }
   };
 
@@ -83,14 +101,18 @@ export default function Slots() {
 
     if (result.isConfirmed) {
       try {
-        await apiService.deleteSlot(slotId);
-        Swal.fire({
-          icon: 'success',
-          title: 'Deleted!',
-          text: 'Slot has been deleted.',
-        });
-        fetchSlots();
-        fetchSlotStats();
+        const response = await apiService.deleteSlot(slotId);
+        if (response.status === 200) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Slot has been deleted.',
+          });
+          fetchSlots();
+          fetchSlotStats();
+        } else {
+          throw new Error(response.message || 'Failed to delete slot');
+        }
       } catch (error: any) {
         Swal.fire({
           icon: 'error',
@@ -103,15 +125,19 @@ export default function Slots() {
 
   const handleCreateSlot = async (slotData: any) => {
     try {
-      await apiService.createSlot(slotData);
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Slot created successfully.',
-      });
-      setShowCreateModal(false);
-      fetchSlots();
-      fetchSlotStats();
+      const response = await apiService.createSlot(slotData);
+      if (response.status === 200) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Slot created successfully.',
+        });
+        setShowCreateModal(false);
+        fetchSlots();
+        fetchSlotStats();
+      } else {
+        throw new Error(response.message || 'Failed to create slot');
+      }
     } catch (error: any) {
       Swal.fire({
         icon: 'error',
@@ -123,15 +149,19 @@ export default function Slots() {
 
   const handleUpdateSlot = async (slotData: any) => {
     try {
-      await apiService.updateSlot(slotData);
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Slot updated successfully.',
-      });
-      setEditingSlot(null);
-      fetchSlots();
-      fetchSlotStats();
+      const response = await apiService.updateSlot(slotData);
+      if (response.status === 200) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Slot updated successfully.',
+        });
+        setEditingSlot(null);
+        fetchSlots();
+        fetchSlotStats();
+      } else {
+        throw new Error(response.message || 'Failed to update slot');
+      }
     } catch (error: any) {
       Swal.fire({
         icon: 'error',
@@ -238,7 +268,7 @@ export default function Slots() {
               <div className="relative flex-1 max-w-md">
                 <input
                   type="text"
-                  placeholder="Search slots..."
+                  placeholder="Search by doctor name or specialty..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 pl-10 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
@@ -290,7 +320,7 @@ export default function Slots() {
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                   {slots.length > 0 ? (
                     slots.map((slot) => {
-                      const doctor = doctors.find(d => d._id === slot.doctorId);
+                      const doctor = doctors.find(d => d._id === slot.doctorId?._id || slot.doctorId);
                       return (
                         <tr key={slot._id}>
                           <td className="px-6 py-4">
