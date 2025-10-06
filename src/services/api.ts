@@ -225,16 +225,25 @@ class ApiService {
     return response;
   }
 
-  // Profile
-  async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
+// Profile
+async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
     return this.request('/profile', {
-      body: JSON.stringify(id ? { id } : {}),
+      method: 'POST',
+      body: JSON.stringify(id ? { id } : {})
     });
   }
 
-  async updateProfile(profileData: Partial<Admin> & { id?: string }): Promise<ApiResponse<{ admin: Admin }>> {
+  async updateProfile(profileData: { name?: string; email?: string; id?: string }): Promise<ApiResponse<{ admin: Admin }>> {
     return this.request('/profile/update', {
-      body: JSON.stringify(profileData),
+      method: 'POST',
+      body: JSON.stringify(profileData)
+    });
+  }
+
+  async changePassword(passwordData: { currentPassword: string; newPassword: string }): Promise<ApiResponse<{}>> {
+    return this.request('/profile/change-password', {
+      method: 'POST',
+      body: JSON.stringify(passwordData)
     });
   }
 

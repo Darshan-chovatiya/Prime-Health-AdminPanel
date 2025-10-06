@@ -1,12 +1,14 @@
-
-import { useState } from "react";
-import { Eye, EyeOff, UserCircle, Mail, Lock, CheckCircle, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, UserCircle, Mail, Lock, CheckCircle, Calendar, User } from "lucide-react";
+import Swal from 'sweetalert2'; // Import SweetAlert2
 import Label from "../components/form/Label";
 import Input from "../components/form/input/InputField";
 import Form from "../components/form/Form";
+import api from "../services/api"; // Adjust path to your API class instance
 
 interface UserProfile {
   email: string;
+  name: string; // Added name
   role: string;
   joinDate: string;
 }
@@ -18,16 +20,16 @@ interface PasswordForm {
 }
 
 export default function UserProfiles() {
-  // Mock user data - in real app, this would come from API/context
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    email: "admin@primehealth.com",
-    role: "Administrator",
-    joinDate: "2024-01-15"
+    email: "",
+    name: "",
+    role: "",
+    joinDate: ""
   });
 
-  const [emailForm, setEmailForm] = useState({
-    newEmail: "",
-    confirmEmail: ""
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: ""
   });
 
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
@@ -43,20 +45,57 @@ export default function UserProfiles() {
   });
 
   const [errors, setErrors] = useState({
-    email: "",
+    profile: "",
     password: "",
     general: ""
   });
 
-  const [success, setSuccess] = useState({
-    email: false,
+  const [isLoading, setIsLoading] = useState({
+    profile: false,
     password: false
   });
 
-  const [isLoading, setIsLoading] = useState({
-    email: false,
-    password: false
-  });
+  // Fetch profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.getProfile();
+        if (response.status === 200) {
+          const admin = response.data.admin;
+          setUserProfile({
+            email: admin.email,
+            name: admin.name,
+            role: admin.role,
+            joinDate: admin.createdAt
+          });
+          setProfileForm({
+            name: admin.name,
+            email: admin.email
+          });
+        } else {
+          setErrors(prev => ({ ...prev, general: response.message || "Failed to load profile" }));
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: response.message || 'Failed to load profile',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        }
+      } catch (error) {
+        setErrors(prev => ({ ...prev, general: "Failed to load profile. Please try again." }));
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load profile. Please try again.',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   // Email validation
   const validateEmail = (email: string) => {
@@ -84,53 +123,95 @@ export default function UserProfiles() {
     };
   };
 
-  // Handle email update
-  const handleEmailUpdate = async (e: React.FormEvent) => {
+  // Handle profile update (name and email)
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(prev => ({ ...prev, email: true }));
-    setErrors(prev => ({ ...prev, email: "" }));
+    setIsLoading(prev => ({ ...prev, profile: true }));
+    setErrors(prev => ({ ...prev, profile: "" }));
 
     // Validation
-    if (!emailForm.newEmail || !emailForm.confirmEmail) {
-      setErrors(prev => ({ ...prev, email: "All fields are required" }));
-      setIsLoading(prev => ({ ...prev, email: false }));
+    if (!profileForm.name || !profileForm.email) {
+      setErrors(prev => ({ ...prev, profile: "Name and email are required" }));
+      setIsLoading(prev => ({ ...prev, profile: false }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Name and email are required',
+        timer: 3000,
+        showConfirmButton: false
+      });
       return;
     }
 
-    if (!validateEmail(emailForm.newEmail)) {
-      setErrors(prev => ({ ...prev, email: "Please enter a valid email address" }));
-      setIsLoading(prev => ({ ...prev, email: false }));
+    if (!validateEmail(profileForm.email)) {
+      setErrors(prev => ({ ...prev, profile: "Please enter a valid email address" }));
+      setIsLoading(prev => ({ ...prev, profile: false }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Please enter a valid email address',
+        timer: 3000,
+        showConfirmButton: false
+      });
       return;
     }
 
-    if (emailForm.newEmail !== emailForm.confirmEmail) {
-      setErrors(prev => ({ ...prev, email: "Email addresses do not match" }));
-      setIsLoading(prev => ({ ...prev, email: false }));
-      return;
-    }
-
-    if (emailForm.newEmail === userProfile.email) {
-      setErrors(prev => ({ ...prev, email: "New email must be different from current email" }));
-      setIsLoading(prev => ({ ...prev, email: false }));
+    if (profileForm.email === userProfile.email && profileForm.name === userProfile.name) {
+      setErrors(prev => ({ ...prev, profile: "No changes detected" }));
+      setIsLoading(prev => ({ ...prev, profile: false }));
+      Swal.fire({
+        icon: 'info',
+        title: 'Info',
+        text: 'No changes detected',
+        timer: 3000,
+        showConfirmButton: false
+      });
       return;
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setUserProfile(prev => ({ ...prev, email: emailForm.newEmail }));
-      setEmailForm({ newEmail: "", confirmEmail: "" });
-      setSuccess(prev => ({ ...prev, email: true }));
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setSuccess(prev => ({ ...prev, email: false }));
-      }, 3000);
+      const response = await api.updateProfile({
+        name: profileForm.name,
+        email: profileForm.email
+      });
+      if (response.status === 200) {
+        setUserProfile(prev => ({
+          ...prev,
+          name: response.data.admin.name,
+          email: response.data.admin.email
+        }));
+        // setSuccess(prev => ({ ...prev, profile: true }));
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Profile updated successfully!',
+          timer: 3000,
+          showConfirmButton: false
+        });
+        setTimeout(() => {
+          // setSuccess(prev => ({ ...prev, profile: false }));
+        }, 3000);
+      } else {
+        setErrors(prev => ({ ...prev, profile: response.message || "Failed to update profile" }));
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: response.message || 'Failed to update profile',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
     } catch (error) {
-      setErrors(prev => ({ ...prev, email: "Failed to update email. Please try again." }));
+      setErrors(prev => ({ ...prev, profile: "Failed to update profile. Please try again." }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to update profile. Please try again.',
+        timer: 3000,
+        showConfirmButton: false
+      });
     } finally {
-      setIsLoading(prev => ({ ...prev, email: false }));
+      setIsLoading(prev => ({ ...prev, profile: false }));
     }
   };
 
@@ -144,6 +225,13 @@ export default function UserProfiles() {
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setErrors(prev => ({ ...prev, password: "All fields are required" }));
       setIsLoading(prev => ({ ...prev, password: false }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'All fields are required',
+        timer: 3000,
+        showConfirmButton: false
+      });
       return;
     }
 
@@ -151,34 +239,79 @@ export default function UserProfiles() {
     if (!passwordValidation.isValid) {
       setErrors(prev => ({ ...prev, password: "Password does not meet requirements" }));
       setIsLoading(prev => ({ ...prev, password: false }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Password does not meet requirements',
+        timer: 3000,
+        showConfirmButton: false
+      });
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setErrors(prev => ({ ...prev, password: "New passwords do not match" }));
       setIsLoading(prev => ({ ...prev, password: false }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'New passwords do not match',
+        timer: 3000,
+        showConfirmButton: false
+      });
       return;
     }
 
     if (passwordForm.currentPassword === passwordForm.newPassword) {
       setErrors(prev => ({ ...prev, password: "New password must be different from current password" }));
       setIsLoading(prev => ({ ...prev, password: false }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'New password must be different from current password',
+        timer: 3000,
+        showConfirmButton: false
+      });
       return;
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setSuccess(prev => ({ ...prev, password: true }));
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setSuccess(prev => ({ ...prev, password: false }));
-      }, 3000);
+      const response = await api.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      if (response.status === 200) {
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        // setSuccess(prev => ({ ...prev, password: true }));
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Password changed successfully!',
+          timer: 3000,
+          showConfirmButton: false
+        });
+        setTimeout(() => {
+          // setSuccess(prev => ({ ...prev, password: false }));
+        }, 3000);
+      } else {
+        setErrors(prev => ({ ...prev, password: response.message || "Failed to change password" }));
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: response.message || 'Failed to change password',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
     } catch (error) {
       setErrors(prev => ({ ...prev, password: "Failed to change password. Please try again." }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to change password. Please try again.',
+        timer: 3000,
+        showConfirmButton: false
+      });
     } finally {
       setIsLoading(prev => ({ ...prev, password: false }));
     }
@@ -194,23 +327,23 @@ export default function UserProfiles() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
-              Admin Profile
+              {userProfile.name || 'Admin Profile'}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">{userProfile.role}</p>
             <p className="text-sm text-gray-500 dark:text-gray-500 flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              Member since {new Date(userProfile.joinDate).toLocaleDateString()}
+              Member since {userProfile.joinDate ? new Date(userProfile.joinDate).toLocaleDateString() : 'N/A'}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Email Update Section */}
+      {/* Profile Update Section */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
         <div className="flex items-center gap-3 mb-6">
-          <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <User className="h-5 w-5 text-green-600 dark:text-green-400" />
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Update Email Address
+            Update Profile
           </h3>
         </div>
         
@@ -227,63 +360,59 @@ export default function UserProfiles() {
           />
         </div>
 
-        {success.email && (
-          <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-            <span className="text-green-700 dark:text-green-300">Email updated successfully!</span>
-          </div>
+        {errors.general && (
+          <p className="mb-4 text-sm text-red-600 dark:text-red-400">{errors.general}</p>
         )}
 
-        <Form onSubmit={handleEmailUpdate}>
+        <Form onSubmit={handleProfileUpdate}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="newEmail" className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-gray-500" />
-                New Email Address <span className="text-red-500">*</span>
+              <Label htmlFor="name" className="flex items-center gap-2">
+                <User className="h-4 w-4 text-gray-500" />
+                Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="newEmail"
-                type="email"
-                placeholder="Enter new email address"
-                value={emailForm.newEmail}
-                onChange={(e) => setEmailForm(prev => ({ ...prev, newEmail: e.target.value }))}
-                error={!!errors.email}
+                id="name"
+                type="text"
+                placeholder="Enter your name"
+                value={profileForm.name}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
+                error={!!errors.profile}
               />
             </div>
             <div>
-              <Label htmlFor="confirmEmail" className="flex items-center gap-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-gray-500" />
-                Confirm Email Address <span className="text-red-500">*</span>
+                Email Address <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="confirmEmail"
+                id="email"
                 type="email"
-                placeholder="Confirm new email address"
-                value={emailForm.confirmEmail}
-                onChange={(e) => setEmailForm(prev => ({ ...prev, confirmEmail: e.target.value }))}
-                error={!!errors.email}
+                placeholder="Enter email address"
+                value={profileForm.email}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
+                error={!!errors.profile}
               />
             </div>
           </div>
           
-          {errors.email && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
+          {errors.profile && (
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.profile}</p>
           )}
           
           <div className="mt-6">
-  <button
-    type="submit"
-    disabled={isLoading.email}
-    className={`w-full md:w-auto px-4 py-2 rounded-md font-medium transition-colors duration-200 
-      ${isLoading.email 
-        ? "bg-gray-300 text-gray-600 cursor-not-allowed" 
-        : "bg-green-600 hover:bg-green-700 text-white"
-      }`}
-  >
-    {isLoading.email ? "Updating..." : "Update Email"}
-  </button>
-</div>
-
+            <button
+              type="submit"
+              disabled={isLoading.profile}
+              className={`w-full md:w-auto px-4 py-2 rounded-md font-medium transition-colors duration-200 
+                ${isLoading.profile 
+                  ? "bg-gray-300 text-gray-600 cursor-not-allowed" 
+                  : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
+            >
+              {isLoading.profile ? "Updating..." : "Update Profile"}
+            </button>
+          </div>
         </Form>
       </div>
 
@@ -295,13 +424,6 @@ export default function UserProfiles() {
             Change Password
           </h3>
         </div>
-
-        {success.password && (
-          <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-            <span className="text-green-700 dark:text-green-300">Password changed successfully!</span>
-          </div>
-        )}
 
         <Form onSubmit={handlePasswordChange}>
           <div className="space-y-6">
@@ -426,19 +548,18 @@ export default function UserProfiles() {
           )}
           
           <div className="mt-6">
-  <button
-    type="submit"
-    disabled={isLoading.password}
-    className={`w-full md:w-auto px-4 py-2 rounded-md font-medium transition-colors duration-200 
-      ${isLoading.password
-        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-        : "bg-green-600 hover:bg-green-700 text-white"
-      }`}
-  >
-    {isLoading.password ? "Changing Password..." : "Change Password"}
-  </button>
-</div>
-
+            <button
+              type="submit"
+              disabled={isLoading.password}
+              className={`w-full md:w-auto px-4 py-2 rounded-md font-medium transition-colors duration-200 
+                ${isLoading.password
+                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
+            >
+              {isLoading.password ? "Changing Password..." : "Change Password"}
+            </button>
+          </div>
         </Form>
       </div>
     </div>
