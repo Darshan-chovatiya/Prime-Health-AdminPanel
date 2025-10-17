@@ -90,7 +90,7 @@ export default function BookingHistory() {
       input: 'textarea',
       inputLabel: 'Reason for cancellation',
       inputPlaceholder: 'Enter reason for cancellation...',
-      inputValidator: (value) => {
+      inputValidator: (value: string) => {
         if (!value) {
           return 'You need to provide a reason!'
         }
@@ -122,7 +122,7 @@ export default function BookingHistory() {
       input: 'text',
       inputLabel: 'New Slot ID',
       inputPlaceholder: 'Enter new slot ID...',
-      inputValidator: (value) => {
+      inputValidator: (value: string) => {
         if (!value) {
           return 'You need to provide a new slot ID!'
         }
