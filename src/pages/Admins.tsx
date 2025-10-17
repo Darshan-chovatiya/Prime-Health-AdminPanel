@@ -1,10 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import apiService, { Admin } from "../services/api";
 import swal from '../utils/swalHelper';
 import AdminModal from "../components/modals/AdminModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+
+// Custom hook for debouncing
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function Admins() {
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -20,11 +37,29 @@ export default function Admins() {
   const [limit, setLimit] = useState(10);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Debounced values
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedRoleFilter = useDebounce(roleFilter, 300);
+  const debouncedStatusFilter = useDebounce(statusFilter, 300);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchTerm, debouncedRoleFilter, debouncedStatusFilter]);
+
+  // Show searching indicator when search term changes but debounced value hasn't updated yet
+  useEffect(() => {
+    setIsSearching(searchTerm !== debouncedSearchTerm);
+  }, [searchTerm, debouncedSearchTerm]);
 
   useEffect(() => {
     fetchAdmins();
     fetchAdminStats();
-  }, [currentPage, searchTerm, roleFilter, statusFilter, limit]);
+  }, [currentPage, debouncedSearchTerm, debouncedRoleFilter, debouncedStatusFilter, limit]);
 
 
   const fetchAdmins = async () => {
@@ -33,9 +68,9 @@ export default function Admins() {
       const response = await apiService.getAdmins({
         page: currentPage,
         limit: limit,
-        search: searchTerm,
-        role: roleFilter === 'all' ? undefined : roleFilter,
-        status: statusFilter === 'all' ? undefined : statusFilter,
+        search: debouncedSearchTerm,
+        role: debouncedRoleFilter === 'all' ? undefined : debouncedRoleFilter,
+        status: debouncedStatusFilter === 'all' ? undefined : debouncedStatusFilter,
       });
       
       if (response.data && response.data.docs) {
@@ -209,12 +244,19 @@ export default function Admins() {
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 items-center gap-4">
-              <SearchInput
-                placeholder="Search admins..."
-                value={searchTerm}
-                onChange={setSearchTerm}
-                debounceMs={500}
-              />
+              <div className="relative flex-1">
+                <SearchInput
+                  placeholder="Search admins..."
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  debounceMs={500}
+                />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                  </div>
+                )}
+              </div>
               <select 
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
