@@ -5,6 +5,7 @@ import CategoryModal from "../components/modals/CategoryModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+import { useDebounce } from '../hooks';
 import Swal from "sweetalert2";
 
 export default function Categories() {
@@ -21,10 +22,20 @@ export default function Categories() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [viewingCategory, setViewingCategory] = useState<Category | null>(null);
 
+  // Debounced values - only for status filter since SearchInput handles search debouncing
+  const debouncedStatusFilter = useDebounce(statusFilter, 300);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, debouncedStatusFilter]);
+
   useEffect(() => {
     fetchCategories();
     fetchCategoryStats();
-  }, [currentPage, searchTerm, statusFilter, limit]);
+  }, [currentPage, searchTerm, debouncedStatusFilter, limit]);
 
   const fetchCategories = async () => {
     try {
@@ -33,7 +44,7 @@ export default function Categories() {
         page: currentPage,
         limit: limit,
         search: searchTerm,
-        status: statusFilter === 'all' ? undefined : statusFilter,
+        status: debouncedStatusFilter === 'all' ? undefined : debouncedStatusFilter,
       });
       
       if (response.data && response.data.docs) {
@@ -215,6 +226,7 @@ export default function Categories() {
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={setSearchTerm}
+                debounceMs={500}
               />
               <select 
                 value={statusFilter}
