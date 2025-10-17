@@ -11,6 +11,7 @@ export default function Admins() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,6 +25,7 @@ export default function Admins() {
     fetchAdmins();
     fetchAdminStats();
   }, [currentPage, searchTerm, roleFilter, statusFilter, limit]);
+
 
   const fetchAdmins = async () => {
     try {
@@ -211,6 +213,7 @@ export default function Admins() {
                 placeholder="Search admins..."
                 value={searchTerm}
                 onChange={setSearchTerm}
+                debounceMs={500}
               />
               <select 
                 value={roleFilter}
