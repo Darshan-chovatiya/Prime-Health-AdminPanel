@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import apiService, { Booking } from "../services/api";
-import Swal from 'sweetalert2';
+import swal from '../utils/swalHelper';
+import ActionButton from '../components/ui/ActionButton';
 
 export default function BookingHistory() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -40,11 +41,7 @@ export default function BookingHistory() {
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load bookings',
-      });
+      swal.error('Error', 'Failed to load bookings');
     } finally {
       setLoading(false);
     }
@@ -82,7 +79,7 @@ export default function BookingHistory() {
   };
 
   const handleCancelBooking = async (bookingId: string, patientName: string) => {
-    const { value: reason } = await Swal.fire({
+    const { value: reason } = await swal.fire({
       title: 'Cancel Booking',
       text: `Cancel booking for ${patientName}?`,
       input: 'textarea',
@@ -97,31 +94,24 @@ export default function BookingHistory() {
       confirmButtonColor: '#dc3545',
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Cancel Booking',
-      cancelButtonText: 'Keep Booking'
+      cancelButtonText: 'Keep Booking',
+      position: 'center' // Keep input dialogs centered
     });
 
     if (reason) {
       try {
         await apiService.cancelBooking(bookingId, reason);
-        Swal.fire({
-          icon: 'success',
-          title: 'Cancelled!',
-          text: 'Booking has been cancelled.',
-        });
+        swal.success('Cancelled!', 'Booking has been cancelled.');
         fetchBookings();
         fetchBookingStats();
       } catch (error: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error.message || 'Failed to cancel booking',
-        });
+        swal.error('Error', error.message || 'Failed to cancel booking');
       }
     }
   };
 
   const handleRescheduleBooking = async (bookingId: string, patientName: string) => {
-    const { value: newSlotId } = await Swal.fire({
+    const { value: newSlotId } = await swal.fire({
       title: 'Reschedule Booking',
       text: `Reschedule booking for ${patientName}?`,
       input: 'text',
@@ -136,25 +126,18 @@ export default function BookingHistory() {
       confirmButtonColor: '#28a745',
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Reschedule',
-      cancelButtonText: 'Cancel'
+      cancelButtonText: 'Cancel',
+      position: 'center' // Keep input dialogs centered
     });
 
     if (newSlotId) {
       try {
         await apiService.rescheduleBooking(bookingId, newSlotId, 'Admin rescheduled');
-        Swal.fire({
-          icon: 'success',
-          title: 'Rescheduled!',
-          text: 'Booking has been rescheduled.',
-        });
+        swal.success('Rescheduled!', 'Booking has been rescheduled.');
         fetchBookings();
         fetchBookingStats();
       } catch (error: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error.message || 'Failed to reschedule booking',
-        });
+        swal.error('Error', error.message || 'Failed to reschedule booking');
       }
     }
   };
@@ -175,17 +158,9 @@ export default function BookingHistory() {
       a.click();
       window.URL.revokeObjectURL(url);
       
-      Swal.fire({
-        icon: 'success',
-        title: 'Exported!',
-        text: 'Bookings exported successfully.',
-      });
+      swal.success('Exported!', 'Bookings exported successfully.');
     } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to export bookings',
-      });
+      swal.error('Error', error.message || 'Failed to export bookings');
     }
   };
 
@@ -427,23 +402,20 @@ export default function BookingHistory() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex space-x-2">
-                              <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                                View
-                              </button>
+                              <ActionButton 
+                                type="view"
+                                onClick={() => {}} // Add view functionality here
+                              />
                               {booking.status !== 'completed' && booking.status !== 'cancelled' && (
                                 <>
-                                  <button 
+                                  <ActionButton 
+                                    type="reschedule"
                                     onClick={() => handleRescheduleBooking(booking._id, patient?.name || 'Patient')}
-                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                  >
-                                    Reschedule
-                                  </button>
-                                  <button 
+                                  />
+                                  <ActionButton 
+                                    type="cancel"
                                     onClick={() => handleCancelBooking(booking._id, patient?.name || 'Patient')}
-                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                  >
-                                    Cancel
-                                  </button>
+                                  />
                                 </>
                               )}
                             </div>

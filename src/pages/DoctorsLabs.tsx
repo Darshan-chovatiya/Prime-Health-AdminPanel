@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import apiService, { Doctor } from "../services/api";
-import Swal from "sweetalert2";
+import swal from '../utils/swalHelper';
 import DoctorModal from "../components/modals/DoctorModal";
+import ActionButton from '../components/ui/ActionButton';
 
 export default function DoctorsLabs() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -53,11 +54,7 @@ export default function DoctorsLabs() {
       }
     } catch (error) {
       console.error("Error fetching doctors:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to load doctors",
-      });
+      swal.error("Error", "Failed to load doctors");
     } finally {
       setLoading(false);
     }
@@ -73,71 +70,37 @@ export default function DoctorsLabs() {
   };
 
   const handleDeleteDoctor = async (doctorId: string, doctorName: string) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `Delete doctor ${doctorName}?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete!",
-      cancelButtonText: "Cancel",
-    });
+    const result = await swal.confirm("Are you sure?", `Delete doctor ${doctorName}?`);
 
     if (result.isConfirmed) {
       try {
         await apiService.deleteDoctor(doctorId);
-        Swal.fire({
-          icon: "success",
-          title: "Deleted!",
-          text: "Doctor has been deleted.",
-        });
+        swal.success("Deleted!", "Doctor has been deleted.");
         fetchDoctors();
         fetchDoctorStats();
       } catch (error: any) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: error.message || "Failed to delete doctor",
-        });
+        swal.error("Error", error.message || "Failed to delete doctor");
       }
     }
   };
 
   const handleApproveDoctor = async (doctorId: string, doctorName: string) => {
-    const result = await Swal.fire({
-      title: "Approve Doctor",
-      text: `Approve ${doctorName}?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#28a745",
-      cancelButtonColor: "#6c757d",
-      confirmButtonText: "Yes, approve!",
-      cancelButtonText: "Cancel",
-    });
+    const result = await swal.confirm("Approve Doctor", `Approve ${doctorName}?`, "Yes, approve!");
 
     if (result.isConfirmed) {
       try {
         await apiService.approveDoctor(doctorId);
-        Swal.fire({
-          icon: "success",
-          title: "Approved!",
-          text: "Doctor has been approved.",
-        });
+        swal.success("Approved!", "Doctor has been approved.");
         fetchDoctors();
         fetchDoctorStats();
       } catch (error: any) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: error.message || "Failed to approve doctor",
-        });
+        swal.error("Error", error.message || "Failed to approve doctor");
       }
     }
   };
 
   const handleRejectDoctor = async (doctorId: string, doctorName: string) => {
-    const { value: reason } = await Swal.fire({
+    const { value: reason } = await swal.fire({
       title: "Reject Doctor",
       text: `Reject ${doctorName}?`,
       input: "textarea",
@@ -153,24 +116,17 @@ export default function DoctorsLabs() {
       cancelButtonColor: "#6c757d",
       confirmButtonText: "Reject",
       cancelButtonText: "Cancel",
+      position: 'center' // Keep input dialogs centered
     });
 
     if (reason) {
       try {
         await apiService.rejectDoctor(doctorId, reason);
-        Swal.fire({
-          icon: "success",
-          title: "Rejected!",
-          text: "Doctor has been rejected.",
-        });
+        swal.success("Rejected!", "Doctor has been rejected.");
         fetchDoctors();
         fetchDoctorStats();
       } catch (error: any) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: error.message || "Failed to reject doctor",
-        });
+        swal.error("Error", error.message || "Failed to reject doctor");
       }
     }
   };
@@ -178,40 +134,24 @@ export default function DoctorsLabs() {
   const handleCreateDoctor = async (doctorData: any) => {
     try {
       await apiService.createDoctor(doctorData);
-      Swal.fire({
-        icon: "success",
-        title: "Success!",
-        text: "Doctor created successfully.",
-      });
+      swal.success("Success!", "Doctor created successfully.");
       setShowCreateModal(false);
       fetchDoctors();
       fetchDoctorStats();
     } catch (error: any) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message || "Failed to create doctor",
-      });
+      swal.error("Error", error.message || "Failed to create doctor");
     }
   };
 
   const handleUpdateDoctor = async (doctorData: any) => {
     try {
       await apiService.updateDoctor(doctorData);
-      Swal.fire({
-        icon: "success",
-        title: "Success!",
-        text: "Doctor updated successfully.",
-      });
+      swal.success("Success!", "Doctor updated successfully.");
       setEditingDoctor(null);
       fetchDoctors();
       fetchDoctorStats();
     } catch (error: any) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message || "Failed to update doctor",
-      });
+      swal.error("Error", error.message || "Failed to update doctor");
     }
   };
 
@@ -495,40 +435,32 @@ export default function DoctorsLabs() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
-                            <button
+                            <ActionButton
+                              type="edit"
                               onClick={() => setEditingDoctor(doctor)}
-                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                            >
-                              Edit
-                            </button>
+                            />
                             {!doctor.isActive && (
                               <>
-                                <button
+                                <ActionButton
+                                  type="approve"
                                   onClick={() =>
                                     handleApproveDoctor(doctor._id, doctor.name)
                                   }
-                                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                >
-                                  Approve
-                                </button>
-                                <button
+                                />
+                                <ActionButton
+                                  type="reject"
                                   onClick={() =>
                                     handleRejectDoctor(doctor._id, doctor.name)
                                   }
-                                  className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300"
-                                >
-                                  Reject
-                                </button>
+                                />
                               </>
                             )}
-                            <button
+                            <ActionButton
+                              type="delete"
                               onClick={() =>
                                 handleDeleteDoctor(doctor._id, doctor.name)
                               }
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              Delete
-                            </button>
+                            />
                           </div>
                         </td>
                       </tr>

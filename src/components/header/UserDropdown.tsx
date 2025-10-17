@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router";
-import Swal from 'sweetalert2';
+import swal from '../../utils/swalHelper';
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,16 +17,7 @@ export default function UserDropdown() {
   }
 
   const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You will be logged out of your account",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, logout!',
-      cancelButtonText: 'Cancel'
-    });
+    const result = await swal.confirm('Are you sure?', "You will be logged out of your account", 'Yes, logout!');
 
     if (result.isConfirmed) {
       // Clear any stored data

@@ -7,7 +7,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
-import Swal from 'sweetalert2';
+import swal from '../utils/swalHelper';
 
 type NavItem = {
   name: string;
@@ -87,16 +87,7 @@ const AppSidebar: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You will be logged out of your account",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, logout!',
-      cancelButtonText: 'Cancel'
-    });
+    const result = await swal.confirm('Are you sure?', "You will be logged out of your account", 'Yes, logout!');
 
     if (result.isConfirmed) {
       try {

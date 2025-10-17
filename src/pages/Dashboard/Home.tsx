@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import apiService, { DashboardStats } from "../../services/api";
-import Swal from 'sweetalert2';
+import swal from '../../utils/swalHelper';
 
 export default function Home() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -14,11 +16,7 @@ export default function Home() {
         setStats(response.data);
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to load dashboard data',
-        });
+        swal.error('Error', 'Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -37,29 +35,14 @@ export default function Home() {
 
   return (
     <>
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <div className="rounded-2xl bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Welcome back, Admin!</h1>
-              <p className="mt-2 text-green-100">Here's what's happening at Prime Health today.</p>
-            </div>
-            <div className="hidden md:block">
-              <div className="text-right">
-                <p className="text-sm text-green-100">Current Time</p>
-                <p className="text-lg font-semibold">{new Date().toLocaleTimeString()}</p>
-                <p className="text-sm text-green-100">{new Date().toLocaleDateString()}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Key Metrics */}
       <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Patients */}
-        <div className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-lg dark:border-gray-800 dark:bg-white/[0.03]">
+        <div 
+          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          onClick={() => navigate('/patients')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Patients</p>
@@ -82,7 +65,10 @@ export default function Home() {
         </div>
 
         {/* Active Doctors */}
-        <div className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-lg dark:border-gray-800 dark:bg-white/[0.03]">
+        <div 
+          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          onClick={() => navigate('/doctors-labs')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Doctors</p>
@@ -105,7 +91,10 @@ export default function Home() {
         </div>
 
         {/* Today's Appointments */}
-        <div className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-lg dark:border-gray-800 dark:bg-white/[0.03]">
+        <div 
+          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          onClick={() => navigate('/booking-history')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Appointments</p>
@@ -130,7 +119,10 @@ export default function Home() {
         </div>
 
         {/* Revenue */}
-        <div className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-lg dark:border-gray-800 dark:bg-white/[0.03]">
+        <div 
+          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          onClick={() => navigate('/booking-history')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Revenue</p>
@@ -161,7 +153,10 @@ export default function Home() {
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Bookings</h3>
-              <button className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700">
+              <button 
+                className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+                onClick={() => navigate('/booking-history')}
+              >
                 View All
               </button>
             </div>
@@ -216,45 +211,34 @@ export default function Home() {
           <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
             <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white hover:bg-green-700 transition-colors">
+              <button 
+                className="w-full rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white hover:bg-green-700 transition-colors"
+                onClick={() => navigate('/patients')}
+              >
                 Add New Patient
               </button>
-              <button className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
+              <button 
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => navigate('/slots')}
+              >
                 Schedule Appointment
               </button>
-              <button className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
+              <button 
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => navigate('/booking-history')}
+              >
                 View Reports
               </button>
-              <button className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors">
+              <button 
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => navigate('/doctors-labs')}
+              >
                 Manage Doctors
               </button>
             </div>
           </div>
 
-          {/* System Status */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">System Status</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Total Bookings</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {stats?.totalBookings?.toLocaleString() || '0'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Categories</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {stats?.totalCategories?.toLocaleString() || '0'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Available Slots</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {stats?.availableSlotsToday?.toLocaleString() || '0'}
-                </span>
-              </div>
-            </div>
-          </div>
+          
         </div>
       </div>
     </>

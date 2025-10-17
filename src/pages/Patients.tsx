@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import apiService, { Patient, Booking } from "../services/api";
-import Swal from 'sweetalert2';
+import swal from '../utils/swalHelper';
+import ActionButton from '../components/ui/ActionButton';
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -69,11 +70,7 @@ export default function Patients() {
       }
     } catch (error) {
       console.error('Error fetching patients:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load patients',
-      });
+      swal.error('Error', 'Failed to load patients');
     } finally {
       setLoading(false);
     }
@@ -89,41 +86,20 @@ export default function Patients() {
   };
 
   const handleDeletePatient = async (patientId: string, patientName: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Delete patient ${patientName}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete!',
-      cancelButtonText: 'Cancel'
-    });
+    const result = await swal.confirm('Are you sure?', `Delete patient ${patientName}?`);
 
     if (result.isConfirmed) {
       try {
         const response = await apiService.deletePatient(patientId);
         if (response.status === 200) {
-          Swal.fire({
-            icon: 'success',
-            title: 'Deleted!',
-            text: 'Patient has been deleted.',
-          });
+          swal.success('Deleted!', 'Patient has been deleted.');
           fetchPatients();
           fetchPatientStats();
         } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: response.message || 'Failed to delete patient',
-          });
+          swal.error('Error', response.message || 'Failed to delete patient');
         }
       } catch (error: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error.message || 'Failed to delete patient',
-        });
+        swal.error('Error', error.message || 'Failed to delete patient');
       }
     }
   };
@@ -190,10 +166,10 @@ export default function Patients() {
         setSelectedPatient(patient);
         setShowEditModal(true);
       } else {
-        Swal.fire('Error', response.message, 'error');
+        swal.error('Error', response.message);
       }
     } catch (error) {
-      Swal.fire('Error', 'Failed to load patient data', 'error');
+      swal.error('Error', 'Failed to load patient data');
     }
   };
 
@@ -205,10 +181,10 @@ export default function Patients() {
         setRecentBookings(response.data.recentBookings || []);
         setShowViewModal(true);
       } else {
-        Swal.fire('Error', response.message, 'error');
+        swal.error('Error', response.message);
       }
     } catch (error) {
-      Swal.fire('Error', 'Failed to load patient data', 'error');
+      swal.error('Error', 'Failed to load patient data');
     }
   };
 
@@ -261,7 +237,7 @@ export default function Patients() {
       });
       setNewMedical({ condition: '', diagnosis: '', treatment: '', date: '' });
     } else {
-      Swal.fire('Warning', 'Please fill all medical history fields', 'warning');
+      swal.warning('Warning', 'Please fill all medical history fields');
     }
   };
 
@@ -280,16 +256,16 @@ export default function Patients() {
         response = await apiService.updatePatient({ ...formData, id: selectedPatient._id });
       }
       if (response.status === 200) {
-        Swal.fire('Success', showCreateModal ? 'Patient created successfully' : 'Patient updated successfully', 'success');
+        swal.success('Success', showCreateModal ? 'Patient created successfully' : 'Patient updated successfully');
         setShowCreateModal(false);
         setShowEditModal(false);
         fetchPatients();
         fetchPatientStats();
       } else {
-        Swal.fire('Error', response.message, 'error');
+        swal.error('Error', response.message);
       }
     } catch (error: any) {
-      Swal.fire('Error', error.message || 'Failed to save patient', 'error');
+      swal.error('Error', error.message || 'Failed to save patient');
     }
   };
 
@@ -875,18 +851,18 @@ export default function Patients() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
-                            <button onClick={() => handleOpenView(patient._id)} className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                              View
-                            </button>
-                            <button onClick={() => handleOpenEdit(patient._id)} className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                              Edit
-                            </button>
-                            <button 
-                              onClick={() => handleDeletePatient(patient._id, patient.name)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              Delete
-                            </button>
+                            <ActionButton 
+                              type="view" 
+                              onClick={() => handleOpenView(patient._id)} 
+                            />
+                            <ActionButton 
+                              type="edit" 
+                              onClick={() => handleOpenEdit(patient._id)} 
+                            />
+                            <ActionButton 
+                              type="delete" 
+                              onClick={() => handleDeletePatient(patient._id, patient.name)} 
+                            />
                           </div>
                         </td>
                       </tr>

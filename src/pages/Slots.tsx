@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import apiService, { Slot } from "../services/api";
-import Swal from 'sweetalert2';
+import swal from '../utils/swalHelper';
 import SlotModal from "../components/modals/SlotModal";
+import ActionButton from '../components/ui/ActionButton';
 
 export default function Slots() {
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -46,11 +47,7 @@ export default function Slots() {
       }
     } catch (error: any) {
       console.error('Error fetching slots:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to load slots',
-      });
+      swal.error('Error', error.message || 'Failed to load slots');
       setSlots([]);
       setTotalPages(1);
     } finally {
@@ -88,37 +85,20 @@ export default function Slots() {
   };
 
   const handleDeleteSlot = async (slotId: string, slotTime: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Delete slot ${slotTime}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete!',
-      cancelButtonText: 'Cancel'
-    });
+    const result = await swal.confirm('Are you sure?', `Delete slot ${slotTime}?`);
 
     if (result.isConfirmed) {
       try {
         const response = await apiService.deleteSlot(slotId);
         if (response.status === 200) {
-          Swal.fire({
-            icon: 'success',
-            title: 'Deleted!',
-            text: 'Slot has been deleted.',
-          });
+          swal.success('Deleted!', 'Slot has been deleted.');
           fetchSlots();
           fetchSlotStats();
         } else {
           throw new Error(response.message || 'Failed to delete slot');
         }
       } catch (error: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error.message || 'Failed to delete slot',
-        });
+        swal.error('Error', error.message || 'Failed to delete slot');
       }
     }
   };
@@ -127,11 +107,7 @@ export default function Slots() {
     try {
       const response = await apiService.createSlot(slotData);
       if (response.status === 200) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Success!',
-          text: 'Slot created successfully.',
-        });
+        swal.success('Success!', 'Slot created successfully.');
         setShowCreateModal(false);
         fetchSlots();
         fetchSlotStats();
@@ -139,11 +115,7 @@ export default function Slots() {
         throw new Error(response.message || 'Failed to create slot');
       }
     } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to create slot',
-      });
+      swal.error('Error', error.message || 'Failed to create slot');
     }
   };
 
@@ -151,11 +123,7 @@ export default function Slots() {
     try {
       const response = await apiService.updateSlot(slotData);
       if (response.status === 200) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Success!',
-          text: 'Slot updated successfully.',
-        });
+        swal.success('Success!', 'Slot updated successfully.');
         setEditingSlot(null);
         fetchSlots();
         fetchSlotStats();
@@ -163,11 +131,7 @@ export default function Slots() {
         throw new Error(response.message || 'Failed to update slot');
       }
     } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to update slot',
-      });
+      swal.error('Error', error.message || 'Failed to update slot');
     }
   };
 
@@ -355,18 +319,14 @@ export default function Slots() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex space-x-2">
-                              <button 
+                              <ActionButton 
+                                type="edit"
                                 onClick={() => setEditingSlot(slot)}
-                                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                              >
-                                Edit
-                              </button>
-                              <button 
+                              />
+                              <ActionButton 
+                                type="delete"
                                 onClick={() => handleDeleteSlot(slot._id, `${new Date(slot.startTime).toLocaleTimeString()} - ${new Date(slot.endTime).toLocaleTimeString()}`)}
-                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                              >
-                                Delete
-                              </button>
+                              />
                             </div>
                           </td>
                         </tr>

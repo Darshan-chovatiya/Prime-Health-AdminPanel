@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import apiService, { Category } from "../services/api";
-import Swal from 'sweetalert2';
+import swal from '../utils/swalHelper';
 import CategoryModal from "../components/modals/CategoryModal";
+import ActionButton from '../components/ui/ActionButton';
 
 export default function Categories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -55,33 +56,16 @@ export default function Categories() {
   };
 
   const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Delete category ${categoryName}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete!',
-      cancelButtonText: 'Cancel'
-    });
+    const result = await swal.confirm('Are you sure?', `Delete category ${categoryName}?`);
 
     if (result.isConfirmed) {
       try {
         await apiService.deleteCategory(categoryId);
-        Swal.fire({
-          icon: 'success',
-          title: 'Deleted!',
-          text: 'Category has been deleted.',
-        });
+        swal.success('Deleted!', 'Category has been deleted.');
         fetchCategories();
         fetchCategoryStats();
       } catch (error: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error.message || 'Failed to delete category',
-        });
+        swal.error('Error', error.message || 'Failed to delete category');
       }
     }
   };
@@ -89,40 +73,24 @@ export default function Categories() {
   const handleCreateCategory = async (categoryData: any) => {
     try {
       await apiService.createCategory(categoryData);
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Category created successfully.',
-      });
+      swal.success('Success!', 'Category created successfully.');
       setShowCreateModal(false);
       fetchCategories();
       fetchCategoryStats();
     } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to create category',
-      });
+      swal.error('Error', error.message || 'Failed to create category');
     }
   };
 
   const handleUpdateCategory = async (categoryData: any) => {
     try {
       await apiService.updateCategory(categoryData);
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Category updated successfully.',
-      });
+      swal.success('Success!', 'Category updated successfully.');
       setEditingCategory(null);
       fetchCategories();
       fetchCategoryStats();
     } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to update category',
-      });
+      swal.error('Error', error.message || 'Failed to update category');
     }
   };
 
@@ -287,18 +255,14 @@ export default function Categories() {
                       <span className="font-medium">{category.servicesCount || category.service?.length || 0}</span> services available
                     </div>
                     <div className="flex space-x-2">
-                      <button 
+                      <ActionButton 
+                        type="edit"
                         onClick={() => setEditingCategory(category)}
-                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                      >
-                        Edit
-                      </button>
-                      <button 
+                      />
+                      <ActionButton 
+                        type="delete"
                         onClick={() => handleDeleteCategory(category._id, category.name)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        Delete
-                      </button>
+                      />
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, UserCircle, Mail, Lock, Calendar, User } from "lucide-react";
-import Swal from 'sweetalert2'; // Import SweetAlert2
+import swal from '../utils/swalHelper';
 import Label from "../components/form/Label";
 import Input from "../components/form/input/InputField";
 import Form from "../components/form/Form";
@@ -74,23 +74,11 @@ export default function UserProfiles() {
           });
         } else {
           setErrors(prev => ({ ...prev, general: response.message || "Failed to load profile" }));
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: response.message || 'Failed to load profile',
-            timer: 3000,
-            showConfirmButton: false
-          });
+          swal.error('Error', response.message || 'Failed to load profile');
         }
       } catch (error) {
         setErrors(prev => ({ ...prev, general: "Failed to load profile. Please try again." }));
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to load profile. Please try again.',
-          timer: 3000,
-          showConfirmButton: false
-        });
+        swal.error('Error', 'Failed to load profile. Please try again.');
       }
     };
 
@@ -133,39 +121,21 @@ export default function UserProfiles() {
     if (!profileForm.name || !profileForm.email) {
       setErrors(prev => ({ ...prev, profile: "Name and email are required" }));
       setIsLoading(prev => ({ ...prev, profile: false }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Name and email are required',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'Name and email are required');
       return;
     }
 
     if (!validateEmail(profileForm.email)) {
       setErrors(prev => ({ ...prev, profile: "Please enter a valid email address" }));
       setIsLoading(prev => ({ ...prev, profile: false }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Please enter a valid email address',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'Please enter a valid email address');
       return;
     }
 
     if (profileForm.email === userProfile.email && profileForm.name === userProfile.name) {
       setErrors(prev => ({ ...prev, profile: "No changes detected" }));
       setIsLoading(prev => ({ ...prev, profile: false }));
-      Swal.fire({
-        icon: 'info',
-        title: 'Info',
-        text: 'No changes detected',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.info('Info', 'No changes detected');
       return;
     }
 
@@ -181,35 +151,17 @@ export default function UserProfiles() {
           email: response.data.admin.email
         }));
         // setSuccess(prev => ({ ...prev, profile: true }));
-        Swal.fire({
-          icon: 'success',
-          title: 'Success',
-          text: 'Profile updated successfully!',
-          timer: 3000,
-          showConfirmButton: false
-        });
+        swal.success('Success', 'Profile updated successfully!');
         setTimeout(() => {
           // setSuccess(prev => ({ ...prev, profile: false }));
         }, 3000);
       } else {
         setErrors(prev => ({ ...prev, profile: response.message || "Failed to update profile" }));
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: response.message || 'Failed to update profile',
-          timer: 3000,
-          showConfirmButton: false
-        });
+        swal.error('Error', response.message || 'Failed to update profile');
       }
     } catch (error) {
       setErrors(prev => ({ ...prev, profile: "Failed to update profile. Please try again." }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to update profile. Please try again.',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'Failed to update profile. Please try again.');
     } finally {
       setIsLoading(prev => ({ ...prev, profile: false }));
     }
@@ -225,13 +177,7 @@ export default function UserProfiles() {
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setErrors(prev => ({ ...prev, password: "All fields are required" }));
       setIsLoading(prev => ({ ...prev, password: false }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'All fields are required',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'All fields are required');
       return;
     }
 
@@ -239,39 +185,21 @@ export default function UserProfiles() {
     if (!passwordValidation.isValid) {
       setErrors(prev => ({ ...prev, password: "Password does not meet requirements" }));
       setIsLoading(prev => ({ ...prev, password: false }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Password does not meet requirements',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'Password does not meet requirements');
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setErrors(prev => ({ ...prev, password: "New passwords do not match" }));
       setIsLoading(prev => ({ ...prev, password: false }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'New passwords do not match',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'New passwords do not match');
       return;
     }
 
     if (passwordForm.currentPassword === passwordForm.newPassword) {
       setErrors(prev => ({ ...prev, password: "New password must be different from current password" }));
       setIsLoading(prev => ({ ...prev, password: false }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'New password must be different from current password',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'New password must be different from current password');
       return;
     }
 
@@ -283,35 +211,17 @@ export default function UserProfiles() {
       if (response.status === 200) {
         setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
         // setSuccess(prev => ({ ...prev, password: true }));
-        Swal.fire({
-          icon: 'success',
-          title: 'Success',
-          text: 'Password changed successfully!',
-          timer: 3000,
-          showConfirmButton: false
-        });
+        swal.success('Success', 'Password changed successfully!');
         setTimeout(() => {
           // setSuccess(prev => ({ ...prev, password: false }));
         }, 3000);
       } else {
         setErrors(prev => ({ ...prev, password: response.message || "Failed to change password" }));
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: response.message || 'Failed to change password',
-          timer: 3000,
-          showConfirmButton: false
-        });
+        swal.error('Error', response.message || 'Failed to change password');
       }
     } catch (error) {
       setErrors(prev => ({ ...prev, password: "Failed to change password. Please try again." }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to change password. Please try again.',
-        timer: 3000,
-        showConfirmButton: false
-      });
+      swal.error('Error', 'Failed to change password. Please try again.');
     } finally {
       setIsLoading(prev => ({ ...prev, password: false }));
     }

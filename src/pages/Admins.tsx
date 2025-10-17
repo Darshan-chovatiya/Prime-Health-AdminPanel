@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import apiService, { Admin } from "../services/api";
-import Swal from 'sweetalert2';
+import swal from '../utils/swalHelper';
 import AdminModal from "../components/modals/AdminModal";
+import ActionButton from '../components/ui/ActionButton';
 
 export default function Admins() {
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -57,33 +58,16 @@ export default function Admins() {
   };
 
   const handleDeleteAdmin = async (adminId: string, adminName: string) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Delete admin ${adminName}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete!',
-      cancelButtonText: 'Cancel'
-    });
+    const result = await swal.confirm('Are you sure?', `Delete admin ${adminName}?`);
 
     if (result.isConfirmed) {
       try {
         await apiService.deleteAdmin(adminId);
-        Swal.fire({
-          icon: 'success',
-          title: 'Deleted!',
-          text: 'Admin has been deleted.',
-        });
+        swal.success('Deleted!', 'Admin has been deleted.');
         fetchAdmins();
         fetchAdminStats();
       } catch (error: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error.message || 'Failed to delete admin',
-        });
+        swal.error('Error', error.message || 'Failed to delete admin');
       }
     }
   };
@@ -91,40 +75,24 @@ export default function Admins() {
   const handleCreateAdmin = async (adminData: any) => {
     try {
       await apiService.createAdmin(adminData);
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Admin created successfully.',
-      });
+      swal.success('Success!', 'Admin created successfully.');
       setShowCreateModal(false);
       fetchAdmins();
       fetchAdminStats();
     } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to create admin',
-      });
+      swal.error('Error', error.message || 'Failed to create admin');
     }
   };
 
   const handleUpdateAdmin = async (adminData: any) => {
     try {
       await apiService.updateAdmin(adminData);
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: 'Admin updated successfully.',
-      });
+      swal.success('Success!', 'Admin updated successfully.');
       setEditingAdmin(null);
       fetchAdmins();
       fetchAdminStats();
     } catch (error: any) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to update admin',
-      });
+      swal.error('Error', error.message || 'Failed to update admin');
     }
   };
 
@@ -317,18 +285,14 @@ export default function Admins() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
-                            <button 
+                            <ActionButton 
+                              type="edit"
                               onClick={() => setEditingAdmin(admin)}
-                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                            >
-                              Edit
-                            </button>
-                            <button 
+                            />
+                            <ActionButton 
+                              type="delete"
                               onClick={() => handleDeleteAdmin(admin._id, admin.name)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              Delete
-                            </button>
+                            />
                           </div>
                         </td>
                       </tr>
