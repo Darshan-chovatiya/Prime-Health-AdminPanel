@@ -296,6 +296,12 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
     });
   }
 
+  async toggleAdminStatus(id: string, isActive: boolean): Promise<ApiResponse<{ admin: Admin }>> {
+    return this.request('/admins/update', {
+      body: JSON.stringify({ id, isActive }),
+    });
+  }
+
   async getAdminStats(): Promise<ApiResponse> {
     return this.request('/admins/stats');
   }
@@ -328,6 +334,12 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
   async deletePatient(id: string): Promise<ApiResponse> {
     return this.request('/patients/delete', {
       body: JSON.stringify({ id }),
+    });
+  }
+
+  async togglePatientStatus(id: string, isActive: boolean): Promise<ApiResponse<{ patient: Patient }>> {
+    return this.request('/patients/update', {
+      body: JSON.stringify({ id, isActive }),
     });
   }
 
@@ -376,6 +388,12 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
   async deleteCategory(id: string): Promise<ApiResponse> {
     return this.request('/categories/delete', {
       body: JSON.stringify({ id }),
+    });
+  }
+
+  async toggleCategoryStatus(id: string, isActive: boolean): Promise<ApiResponse<{ category: Category }>> {
+    return this.request('/categories/update', {
+      body: JSON.stringify({ id, isActive }),
     });
   }
 
@@ -442,6 +460,12 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
   async deleteDoctor(id: string): Promise<ApiResponse> {
     return this.request('/doctors/delete', {
       body: JSON.stringify({ id }),
+    });
+  }
+
+  async toggleDoctorStatus(id: string, isActive: boolean): Promise<ApiResponse<{ doctor: Doctor }>> {
+    return this.request('/doctors/update', {
+      body: JSON.stringify({ id, isActive }),
     });
   }
 
@@ -573,6 +597,12 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
   async deleteSlot(id: string): Promise<ApiResponse> {
     return this.request('/slots/delete', {
       body: JSON.stringify({ id }),
+    });
+  }
+
+  async toggleSlotStatus(id: string, status: string): Promise<ApiResponse<{ slot: Slot }>> {
+    return this.request('/slots/update', {
+      body: JSON.stringify({ id, status }),
     });
   }
 

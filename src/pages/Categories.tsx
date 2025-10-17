@@ -95,6 +95,17 @@ export default function Categories() {
     }
   };
 
+  const handleToggleStatus = async (categoryId: string, currentStatus: boolean) => {
+    try {
+      await apiService.toggleCategoryStatus(categoryId, !currentStatus);
+      swal.success('Success!', `Category ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
+      fetchCategories();
+      fetchCategoryStats();
+    } catch (error: any) {
+      swal.error('Error', error.message || 'Failed to update category status');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -229,15 +240,17 @@ export default function Categories() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Medical Specialty</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                    <span 
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors duration-200 hover:opacity-80 ${
                         category.isActive 
                           ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
                           : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
-                      }`}>
-                        {category.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
+                      }`}
+                      onClick={() => handleToggleStatus(category._id, category.isActive)}
+                      title={`Click to ${category.isActive ? 'deactivate' : 'activate'} category`}
+                    >
+                      {category.isActive ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 dark:text-gray-400">

@@ -4,7 +4,6 @@ import swal from '../utils/swalHelper';
 import AdminModal from "../components/modals/AdminModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
-import Swal from "sweetalert2";
 
 export default function Admins() {
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -40,11 +39,7 @@ export default function Admins() {
       }
     } catch (error) {
       console.error('Error fetching admins:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load admins',
-      });
+      swal.error('Error', 'Failed to load admins');
     } finally {
       setLoading(false);
     }
@@ -95,6 +90,17 @@ export default function Admins() {
       fetchAdminStats();
     } catch (error: any) {
       swal.error('Error', error.message || 'Failed to update admin');
+    }
+  };
+
+  const handleToggleStatus = async (adminId: string, currentStatus: boolean) => {
+    try {
+      await apiService.toggleAdminStatus(adminId, !currentStatus);
+      swal.success('Success!', `Admin ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
+      fetchAdmins();
+      fetchAdminStats();
+    } catch (error: any) {
+      swal.error('Error', error.message || 'Failed to update admin status');
     }
   };
 
@@ -267,11 +273,15 @@ export default function Admins() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                            admin.isActive 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
-                          }`}>
+                          <span 
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors duration-200 hover:opacity-80 ${
+                              admin.isActive 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                                : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                            }`}
+                            onClick={() => handleToggleStatus(admin._id, admin.isActive)}
+                            title={`Click to ${admin.isActive ? 'deactivate' : 'activate'} admin`}
+                          >
                             {admin.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>

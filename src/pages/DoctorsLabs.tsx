@@ -156,6 +156,17 @@ export default function DoctorsLabs() {
     }
   };
 
+  const handleToggleStatus = async (doctorId: string, currentStatus: boolean) => {
+    try {
+      await apiService.toggleDoctorStatus(doctorId, !currentStatus);
+      swal.success('Success!', `Doctor ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
+      fetchDoctors();
+      fetchDoctorStats();
+    } catch (error: any) {
+      swal.error('Error', error.message || 'Failed to update doctor status');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -407,12 +418,14 @@ export default function DoctorsLabs() {
                           {doctor.license}
                         </td>
                         <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                          <span 
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors duration-200 hover:opacity-80 ${
                               doctor.isActive
                                 ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400"
                                 : "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400"
                             }`}
+                            onClick={() => handleToggleStatus(doctor._id, doctor.isActive)}
+                            title={`Click to ${doctor.isActive ? 'deactivate' : 'activate'} doctor`}
                           >
                             {doctor.isActive ? "Active" : "Inactive"}
                           </span>

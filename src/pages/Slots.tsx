@@ -136,6 +136,18 @@ export default function Slots() {
     }
   };
 
+  const handleToggleStatus = async (slotId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'available' ? 'blocked' : 'available';
+      await apiService.toggleSlotStatus(slotId, newStatus);
+      swal.success('Success!', `Slot ${newStatus === 'available' ? 'activated' : 'blocked'} successfully.`);
+      fetchSlots();
+      fetchSlotStats();
+    } catch (error: any) {
+      swal.error('Error', error.message || 'Failed to update slot status');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -298,13 +310,17 @@ export default function Slots() {
                             {new Date(slot.endTime).toLocaleString()}
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                              slot.status === 'available' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
-                                : slot.status === 'booked'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
-                            }`}>
+                            <span 
+                              className={`inline-flex rounded-full px-2 py-1 text-xs font-medium transition-colors duration-200 ${
+                                slot.status === 'available' 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400 cursor-pointer hover:opacity-80'
+                                  : slot.status === 'booked'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400 cursor-pointer hover:opacity-80'
+                              }`}
+                              onClick={slot.status !== 'booked' ? () => handleToggleStatus(slot._id, slot.status) : undefined}
+                              title={slot.status !== 'booked' ? `Click to ${slot.status === 'available' ? 'block' : 'activate'} slot` : 'Booked slot cannot be changed'}
+                            >
                               {slot.status.charAt(0).toUpperCase() + slot.status.slice(1)}
                             </span>
                           </td>

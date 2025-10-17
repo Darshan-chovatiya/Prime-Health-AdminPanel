@@ -270,6 +270,17 @@ export default function Patients() {
     }
   };
 
+  const handleToggleStatus = async (patientId: string, currentStatus: boolean) => {
+    try {
+      await apiService.togglePatientStatus(patientId, !currentStatus);
+      swal.success('Success!', `Patient ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
+      fetchPatients();
+      fetchPatientStats();
+    } catch (error: any) {
+      swal.error('Error', error.message || 'Failed to update patient status');
+    }
+  };
+
   const renderModal = (isCreate: boolean) => {
     return (
       <div className="fixed inset-0 bg-[#1018285e] bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
@@ -832,11 +843,15 @@ export default function Patients() {
                           {patient.age || 'N/A'}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                            patient.isActive 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
-                          }`}>
+                          <span 
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors duration-200 hover:opacity-80 ${
+                              patient.isActive 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                                : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                            }`}
+                            onClick={() => handleToggleStatus(patient._id, patient.isActive)}
+                            title={`Click to ${patient.isActive ? 'deactivate' : 'activate'} patient`}
+                          >
                             {patient.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
