@@ -3,6 +3,7 @@ import apiService, { Patient, Booking } from "../services/api";
 import swal from '../utils/swalHelper';
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
+import PaginationControls from '../components/ui/PaginationControls';
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -12,6 +13,8 @@ export default function Patients() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -53,14 +56,14 @@ export default function Patients() {
   useEffect(() => {
     fetchPatients();
     fetchPatientStats();
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [currentPage, searchTerm, statusFilter, limit]);
 
   const fetchPatients = async () => {
     try {
       setLoading(true);
       const response = await apiService.getPatients({
         page: currentPage,
-        limit: 10,
+        limit: limit,
         search: searchTerm,
         status: statusFilter === 'all' ? undefined : statusFilter,
       });
@@ -68,6 +71,7 @@ export default function Patients() {
       if (response.data && response.data.docs) {
         setPatients(response.data.docs);
         setTotalPages(response.data.totalPages || 1);
+        setTotalDocs(response.data.totalDocs || 0);
       }
     } catch (error) {
       console.error('Error fetching patients:', error);
@@ -279,6 +283,11 @@ export default function Patients() {
     } catch (error: any) {
       swal.error('Error', error.message || 'Failed to update patient status');
     }
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
   };
 
   const renderModal = (isCreate: boolean) => {
@@ -598,86 +607,272 @@ export default function Patients() {
   const renderViewModal = () => {
     if (!selectedPatient) return null;
     return (
-      <div className="fixed inset-0 bg-[#1018285e] bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-2xl m-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Patient Details</h2>
-            <button onClick={() => setShowViewModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/20">
+                <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Patient Details</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Complete patient information and medical history</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowViewModal(false)} 
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Basic Information</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Name: {selectedPatient.name}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Email: {selectedPatient.email || 'N/A'}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Mobile: {selectedPatient.mobileNo}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">DOB: {selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Gender: {selectedPatient.gender}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Blood Group: {selectedPatient.bloodGroup || 'N/A'}</p>
+
+          {/* Scrollable Body */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Basic Information */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Basic Information
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Name:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Email:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.email || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Mobile:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.mobileNo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Date of Birth:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Gender:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.gender}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Blood Group:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.bloodGroup || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Address Information */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Address
+                </h3>
+                {selectedPatient.address ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Street:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.address.street || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">City:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.address.city || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">State:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.address.state || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Zip Code:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.address.zipCode || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Country:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.address.country || 'N/A'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No address information available</p>
+                )}
+              </div>
+
+              {/* Emergency Contact */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  Emergency Contact
+                </h3>
+                {selectedPatient.emergencyContact ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Name:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.emergencyContact.name || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Relationship:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.emergencyContact.relationship || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Mobile:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedPatient.emergencyContact.mobileNo || 'N/A'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No emergency contact information available</p>
+                )}
+              </div>
+
+              {/* Allergies */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  Allergies
+                </h3>
+                {selectedPatient.allergies?.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedPatient.allergies.map((allergy, i) => (
+                      <div key={i} className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        <span className="text-sm text-gray-900 dark:text-white">{allergy}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No known allergies</p>
+                )}
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Address</h3>
-              {selectedPatient.address && (
-                <>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Street: {selectedPatient.address.street || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">City: {selectedPatient.address.city || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">State: {selectedPatient.address.state || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Zip: {selectedPatient.address.zipCode || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Country: {selectedPatient.address.country || 'N/A'}</p>
-                </>
-              )}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Emergency Contact</h3>
-              {selectedPatient.emergencyContact && (
-                <>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Name: {selectedPatient.emergencyContact.name || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Relationship: {selectedPatient.emergencyContact.relationship || 'N/A'}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Mobile: {selectedPatient.emergencyContact.mobileNo || 'N/A'}</p>
-                </>
-              )}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Allergies</h3>
-              {selectedPatient.allergies?.length > 0 ? (
-                <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300">
-                  {selectedPatient.allergies.map((allergy, i) => <li key={i}>{allergy}</li>)}
-                </ul>
-              ) : <p className="text-sm text-gray-600 dark:text-gray-300">None</p>}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Medical History</h3>
+
+            {/* Medical History - Full Width */}
+            <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Medical History
+              </h3>
               {selectedPatient.medicalHistory?.length > 0 ? (
-                <ul className="space-y-2">
+                <div className="space-y-4">
                   {selectedPatient.medicalHistory.map((history, i) => (
-                    <li key={i} className="border p-2 rounded text-sm text-gray-600 dark:text-gray-300">
-                      <p>Condition: {history.condition}</p>
-                      <p>Diagnosis: {history.diagnosis}</p>
-                      <p>Treatment: {history.treatment}</p>
-                      <p>Date: {new Date(history.date).toLocaleDateString()}</p>
-                    </li>
+                    <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Condition:</span>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">{history.condition}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Date:</span>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">{new Date(history.date).toLocaleDateString()}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Diagnosis:</span>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">{history.diagnosis}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Treatment:</span>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">{history.treatment}</p>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </ul>
-              ) : <p className="text-sm text-gray-600 dark:text-gray-300">None</p>}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No medical history available</p>
+              )}
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Recent Bookings</h3>
+
+            {/* Recent Bookings - Full Width */}
+            <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Recent Bookings
+              </h3>
               {recentBookings.length > 0 ? (
-                <ul className="space-y-2">
+                <div className="space-y-4">
                   {recentBookings.map((booking, i) => (
-                    <li key={i} className="border p-2 rounded text-sm text-gray-600 dark:text-gray-300">
-                      <p>Doctor: {booking.doctorId?.name} ({booking.doctorId?.specialty})</p>
-                      <p>Service: {booking.serviceId?.name}</p>
-                      <p>Date: {new Date(booking.appointmentDate).toLocaleString()}</p>
-                      <p>Status: {booking.status}</p>
-                    </li>
+                    <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Doctor:</span>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {booking.doctorId?.name} ({booking.doctorId?.specialty})
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Date:</span>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">
+                            {new Date(booking.appointmentDate).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Service:</span>
+                          <p className="text-sm text-gray-900 dark:text-white mt-1">{booking.serviceId?.name}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status:</span>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 ${
+                            booking.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400' :
+                            booking.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400' :
+                            booking.status === 'confirmed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400' :
+                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400'
+                          }`}>
+                            {booking.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </ul>
-              ) : <p className="text-sm text-gray-600 dark:text-gray-300">No recent bookings</p>}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No recent bookings available</p>
+              )}
             </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => {
+                setShowViewModal(false);
+                setSelectedPatient(selectedPatient);
+                setShowEditModal(true);
+              }}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Edit Patient</span>
+            </button>
+            <button
+              onClick={() => setShowViewModal(false)}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Close</span>
+            </button>
           </div>
         </div>
       </div>
@@ -887,32 +1082,15 @@ export default function Patients() {
               </table>
             </div>
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalDocs={totalDocs}
+              limit={limit}
+              onPageChange={setCurrentPage}
+              onLimitChange={handleLimitChange}
+            />
           </div>
         </div>
       </div>

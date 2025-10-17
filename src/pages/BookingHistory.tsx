@@ -3,6 +3,7 @@ import apiService, { Booking } from "../services/api";
 import swal from '../utils/swalHelper';
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
+import PaginationControls from '../components/ui/PaginationControls';
 
 export default function BookingHistory() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -14,6 +15,8 @@ export default function BookingHistory() {
   const [patientFilter, setPatientFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
 
@@ -22,14 +25,14 @@ export default function BookingHistory() {
     fetchBookingStats();
     fetchDoctors();
     fetchPatients();
-  }, [currentPage, searchTerm, statusFilter, doctorFilter, patientFilter]);
+  }, [currentPage, searchTerm, statusFilter, doctorFilter, patientFilter, limit]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
       const response = await apiService.getBookings({
         page: currentPage,
-        limit: 10,
+        limit: limit,
         search: searchTerm,
         status: statusFilter === 'all' ? undefined : statusFilter,
         doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
@@ -39,6 +42,7 @@ export default function BookingHistory() {
       if (response.data && response.data.docs) {
         setBookings(response.data.docs);
         setTotalPages(response.data.totalPages || 1);
+        setTotalDocs(response.data.totalDocs || 0);
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -141,6 +145,11 @@ export default function BookingHistory() {
         swal.error('Error', error.message || 'Failed to reschedule booking');
       }
     }
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
   };
 
   const exportBookings = async () => {
@@ -428,32 +437,15 @@ export default function BookingHistory() {
               </table>
             </div>
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalDocs={totalDocs}
+              limit={limit}
+              onPageChange={setCurrentPage}
+              onLimitChange={handleLimitChange}
+            />
           </div>
         </div>
       </div>

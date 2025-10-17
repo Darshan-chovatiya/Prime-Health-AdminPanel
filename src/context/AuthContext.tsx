@@ -58,8 +58,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.login(email, password);
       
       if (response.data.token && response.data.admin) {
-        setToken(response.data.token);
-        setUser(response.data.admin);
+        const token = response.data.token;
+        const userData = response.data.admin;
+        
+        // Set state
+        setToken(token);
+        setUser(userData);
+        
+        // Store in localStorage
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('user', JSON.stringify(userData));
       } else {
         throw new Error('Invalid response from server');
       }
@@ -77,8 +85,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear state
       setUser(null);
       setToken(null);
+      
+      // Clear localStorage
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
     }
   };
 

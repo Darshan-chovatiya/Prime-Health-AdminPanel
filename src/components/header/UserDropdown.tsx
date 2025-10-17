@@ -2,11 +2,13 @@ import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router";
+import { useAuth } from "../../context/AuthContext";
 import swal from '../../utils/swalHelper';
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -20,13 +22,26 @@ export default function UserDropdown() {
     const result = await swal.confirm('Are you sure?', "You will be logged out of your account", 'Yes, logout!');
 
     if (result.isConfirmed) {
-      // Clear any stored data
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      
-      // Close dropdown and redirect to login page
-      closeDropdown();
-      navigate('/signin');
+      try {
+        // Close dropdown first
+        closeDropdown();
+        
+        // Use AuthContext logout method
+        await logout();
+        
+        // Clear any additional stored data
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        
+        // Show success message
+        swal.success('Success!', 'You have been logged out successfully.');
+        
+        // Navigate to signin page
+        navigate('/signin');
+      } catch (error: any) {
+        console.error('Logout error:', error);
+        swal.error('Error', 'Failed to logout. Please try again.');
+      }
     }
   };
   return (
@@ -36,10 +51,10 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11 flex items-center justify-center bg-emerald-100 text-emerald-700 font-semibold">
-          {`${"Darshan Chovatiya".split(" ").map(n => n[0]).join("").toUpperCase()}`}
+          {user ? `${user.name.split(" ").map(n => n[0]).join("").toUpperCase()}` : "DC"}
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Darshan Chovatiya</span>
+        <span className="block mr-1 font-medium text-theme-sm">{user?.name || "Darshan Chovatiya"}</span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -67,10 +82,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            Darshan Chovatiya
+            {user?.name || "Darshan Chovatiya"}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            darshan@itfuturz.com
+            {user?.email || "darshan@itfuturz.com"}
           </span>
         </div>
 

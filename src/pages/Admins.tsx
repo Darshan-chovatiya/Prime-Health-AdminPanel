@@ -4,6 +4,7 @@ import swal from '../utils/swalHelper';
 import AdminModal from "../components/modals/AdminModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
+import PaginationControls from '../components/ui/PaginationControls';
 
 export default function Admins() {
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -14,20 +15,22 @@ export default function Admins() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
 
   useEffect(() => {
     fetchAdmins();
     fetchAdminStats();
-  }, [currentPage, searchTerm, roleFilter, statusFilter]);
+  }, [currentPage, searchTerm, roleFilter, statusFilter, limit]);
 
   const fetchAdmins = async () => {
     try {
       setLoading(true);
       const response = await apiService.getAdmins({
         page: currentPage,
-        limit: 10,
+        limit: limit,
         search: searchTerm,
         role: roleFilter === 'all' ? undefined : roleFilter,
         status: statusFilter === 'all' ? undefined : statusFilter,
@@ -36,6 +39,7 @@ export default function Admins() {
       if (response.data && response.data.docs) {
         setAdmins(response.data.docs);
         setTotalPages(response.data.totalPages || 1);
+        setTotalDocs(response.data.totalDocs || 0);
       }
     } catch (error) {
       console.error('Error fetching admins:', error);
@@ -102,6 +106,11 @@ export default function Admins() {
     } catch (error: any) {
       swal.error('Error', error.message || 'Failed to update admin status');
     }
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
   };
 
   if (loading) {
@@ -313,32 +322,15 @@ export default function Admins() {
               </table>
             </div>
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalDocs={totalDocs}
+              limit={limit}
+              onPageChange={setCurrentPage}
+              onLimitChange={handleLimitChange}
+            />
           </div>
         </div>
       </div>

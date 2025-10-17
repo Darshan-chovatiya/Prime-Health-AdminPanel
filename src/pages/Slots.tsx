@@ -4,6 +4,7 @@ import swal from '../utils/swalHelper';
 import SlotModal from "../components/modals/SlotModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
+import PaginationControls from '../components/ui/PaginationControls';
 
 export default function Slots() {
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -14,6 +15,8 @@ export default function Slots() {
   const [doctorFilter, setDoctorFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -27,14 +30,14 @@ export default function Slots() {
     fetchSlots();
     fetchSlotStats();
     fetchDoctors();
-  }, [currentPage, searchTerm, statusFilter, doctorFilter]);
+  }, [currentPage, searchTerm, statusFilter, doctorFilter, limit]);
 
   const fetchSlots = async () => {
     try {
       setLoading(true);
       const response = await apiService.getSlots({
         page: currentPage,
-        limit: 10,
+        limit: limit,
         search: searchTerm || undefined,
         status: statusFilter === 'all' ? undefined : statusFilter,
         doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
@@ -43,6 +46,7 @@ export default function Slots() {
       if (response.status === 200 && response.data) {
         setSlots(response.data.docs || []);
         setTotalPages(response.data.totalPages || 1);
+        setTotalDocs(response.data.totalDocs || 0);
       } else {
         throw new Error(response.message || 'Failed to load slots');
       }
@@ -146,6 +150,11 @@ export default function Slots() {
     } catch (error: any) {
       swal.error('Error', error.message || 'Failed to update slot status');
     }
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
   };
 
   if (loading) {
@@ -353,32 +362,15 @@ export default function Slots() {
               </table>
             </div>
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalDocs={totalDocs}
+              limit={limit}
+              onPageChange={setCurrentPage}
+              onLimitChange={handleLimitChange}
+            />
           </div>
         </div>
       </div>

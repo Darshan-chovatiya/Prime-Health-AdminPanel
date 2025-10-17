@@ -4,6 +4,7 @@ import swal from '../utils/swalHelper';
 import DoctorModal from "../components/modals/DoctorModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
+import PaginationControls from '../components/ui/PaginationControls';
 
 export default function DoctorsLabs() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -14,6 +15,8 @@ export default function DoctorsLabs() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [specialties, setSpecialties] = useState<any[]>([]);
@@ -23,7 +26,7 @@ export default function DoctorsLabs() {
   useEffect(() => {
     fetchDoctors();
     fetchDoctorStats();
-  }, [currentPage, searchTerm, specialtyFilter, statusFilter]);
+  }, [currentPage, searchTerm, specialtyFilter, statusFilter, limit]);
   useEffect(() => {
     const fetchSpecialties = async () => {
       try {
@@ -43,7 +46,7 @@ export default function DoctorsLabs() {
       setLoading(true);
       const response = await apiService.getDoctors({
         page: currentPage,
-        limit: 10,
+        limit: limit,
         search: searchTerm,
         specialty: specialtyFilter === "all" ? undefined : specialtyFilter,
         status: statusFilter === "all" ? undefined : statusFilter,
@@ -52,6 +55,7 @@ export default function DoctorsLabs() {
       if (response.data && response.data.docs) {
         setDoctors(response.data.docs);
         setTotalPages(response.data.totalPages || 1);
+        setTotalDocs(response.data.totalDocs || 0);
       }
     } catch (error) {
       console.error("Error fetching doctors:", error);
@@ -107,7 +111,7 @@ export default function DoctorsLabs() {
       input: "textarea",
       inputLabel: "Reason for rejection",
       inputPlaceholder: "Enter reason for rejection...",
-      inputValidator: (value) => {
+      inputValidator: (value: string) => {
         if (!value) {
           return "You need to provide a reason!";
         }
@@ -165,6 +169,11 @@ export default function DoctorsLabs() {
     } catch (error: any) {
       swal.error('Error', error.message || 'Failed to update doctor status');
     }
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setCurrentPage(1); // Reset to first page when changing limit
   };
 
   if (loading) {
@@ -476,36 +485,15 @@ export default function DoctorsLabs() {
               </table>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={currentPage === 1}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                      disabled={currentPage === totalPages}
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalDocs={totalDocs}
+              limit={limit}
+              onPageChange={setCurrentPage}
+              onLimitChange={handleLimitChange}
+            />
           </div>
         </div>
       </div>
