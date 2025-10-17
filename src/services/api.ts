@@ -71,7 +71,7 @@ export interface Category {
   description: string;
   icon?: string;
   color?: string;
-  service: string;
+  service: string | { _id: string; name: string; description: string };
   isActive: boolean;
   sortOrder: number;
   servicesCount?: number;

@@ -271,7 +271,7 @@ export default function Categories() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-800 dark:text-white/90">
-                          {category.servicesCount || category.service?.length || 0}
+                          {category.servicesCount || (category.service ? 1 : 0)}
                         </td>
                         <td className="px-6 py-4">
                           <span 
@@ -421,7 +421,7 @@ export default function Categories() {
                   <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Services</h5>
                   <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                     <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {viewingCategory.servicesCount || viewingCategory.service?.length || 0}
+                      {viewingCategory.servicesCount || (viewingCategory.service ? 1 : 0)}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">services available</span>
                   </div>

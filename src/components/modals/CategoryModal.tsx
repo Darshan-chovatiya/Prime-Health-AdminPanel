@@ -36,7 +36,7 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
       setFormData({
         name: category.name,
         description: category.description,
-        service: category.service || "", 
+        service: typeof category.service === 'object' ? category.service._id : category.service || "", 
         isActive: category.isActive,
         sortOrder: category.sortOrder,
       });
