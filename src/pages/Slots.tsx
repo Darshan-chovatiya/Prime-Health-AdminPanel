@@ -5,6 +5,7 @@ import SlotModal from "../components/modals/SlotModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+import { useDebounce } from '../hooks';
 
 export default function Slots() {
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -21,16 +22,22 @@ export default function Slots() {
   const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
   const [doctors, setDoctors] = useState<any[]>([]);
 
+  // Debounced values - only for filters since SearchInput handles search debouncing
+  const debouncedStatusFilter = useDebounce(statusFilter, 300);
+  const debouncedDoctorFilter = useDebounce(doctorFilter, 300);
+
+  // Reset to first page when filters change
   useEffect(() => {
-    // Reset page to 1 when filters change
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, doctorFilter]);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, debouncedStatusFilter, debouncedDoctorFilter]);
 
   useEffect(() => {
     fetchSlots();
     fetchSlotStats();
     fetchDoctors();
-  }, [currentPage, searchTerm, statusFilter, doctorFilter, limit]);
+  }, [currentPage, searchTerm, debouncedStatusFilter, debouncedDoctorFilter, limit]);
 
   const fetchSlots = async () => {
     try {
@@ -38,9 +45,9 @@ export default function Slots() {
       const response = await apiService.getSlots({
         page: currentPage,
         limit: limit,
-        search: searchTerm || undefined,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
+        search: searchTerm,
+        status: debouncedStatusFilter === 'all' ? undefined : debouncedStatusFilter,
+        doctorId: debouncedDoctorFilter === 'all' ? undefined : debouncedDoctorFilter,
       });
 
       if (response.status === 200 && response.data) {
@@ -252,9 +259,10 @@ export default function Slots() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 items-center gap-4">
               <SearchInput
-                placeholder="Search by doctor name or specialty..."
+                placeholder="Search by doctor name..."
                 value={searchTerm}
                 onChange={setSearchTerm}
+                debounceMs={500}
               />
               <select 
                 value={doctorFilter}
