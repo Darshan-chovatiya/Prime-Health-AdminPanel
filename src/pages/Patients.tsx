@@ -4,6 +4,7 @@ import swal from '../utils/swalHelper';
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+import { useDebounce } from '../hooks';
 
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -22,6 +23,9 @@ export default function Patients() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
+
+  // Debounced values - only for status filter since SearchInput handles search debouncing
+  const debouncedStatusFilter = useDebounce(statusFilter, 300);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -53,10 +57,17 @@ export default function Patients() {
     date: ''
   });
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, debouncedStatusFilter]);
+
   useEffect(() => {
     fetchPatients();
     fetchPatientStats();
-  }, [currentPage, searchTerm, statusFilter, limit]);
+  }, [currentPage, searchTerm, debouncedStatusFilter, limit]);
 
   const fetchPatients = async () => {
     try {
@@ -65,7 +76,7 @@ export default function Patients() {
         page: currentPage,
         limit: limit,
         search: searchTerm,
-        status: statusFilter === 'all' ? undefined : statusFilter,
+        status: debouncedStatusFilter === 'all' ? undefined : debouncedStatusFilter,
       });
       
       if (response.data && response.data.docs) {
@@ -991,6 +1002,7 @@ export default function Patients() {
                 placeholder="Search patients..."
                 value={searchTerm}
                 onChange={setSearchTerm}
+                debounceMs={500}
               />
               <select 
                 value={statusFilter}

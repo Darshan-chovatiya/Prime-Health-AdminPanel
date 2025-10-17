@@ -5,6 +5,7 @@ import AdminModal from "../components/modals/AdminModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+import { useDebounce } from '../hooks';
 
 export default function Admins() {
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -21,10 +22,21 @@ export default function Admins() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
 
+  // Debounced values - only for filters since SearchInput handles search debouncing
+  const debouncedRoleFilter = useDebounce(roleFilter, 300);
+  const debouncedStatusFilter = useDebounce(statusFilter, 300);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, debouncedRoleFilter, debouncedStatusFilter]);
+
   useEffect(() => {
     fetchAdmins();
     fetchAdminStats();
-  }, [currentPage, searchTerm, roleFilter, statusFilter, limit]);
+  }, [currentPage, searchTerm, debouncedRoleFilter, debouncedStatusFilter, limit]);
 
 
   const fetchAdmins = async () => {
@@ -34,8 +46,8 @@ export default function Admins() {
         page: currentPage,
         limit: limit,
         search: searchTerm,
-        role: roleFilter === 'all' ? undefined : roleFilter,
-        status: statusFilter === 'all' ? undefined : statusFilter,
+        role: debouncedRoleFilter === 'all' ? undefined : debouncedRoleFilter,
+        status: debouncedStatusFilter === 'all' ? undefined : debouncedStatusFilter,
       });
       
       if (response.data && response.data.docs) {
