@@ -341,11 +341,18 @@ export default function Patients() {
                   <input 
                     name="mobileNo" 
                     value={formData.mobileNo} 
-                    onChange={handleInputChange} 
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow numbers
+                      if (/^\d*$/.test(value)) {
+                        handleInputChange(e);
+                      }
+                    }} 
                     required 
                     pattern="[0-9]{10}" 
                     className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
-                    placeholder="Enter 10-digit mobile number"
+                    placeholder="Enter 10-digit mobile number (numbers only)"
+                    maxLength={10}
                   />
                 </div>
                 <div>
@@ -483,10 +490,17 @@ export default function Patients() {
                   <input 
                     name="mobileNo" 
                     value={formData.emergencyContact.mobileNo} 
-                    onChange={handleEmergencyChange} 
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow numbers
+                      if (/^\d*$/.test(value)) {
+                        handleEmergencyChange(e);
+                      }
+                    }} 
                     pattern="[0-9]{10}" 
                     className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
-                    placeholder="Enter 10-digit mobile number"
+                    placeholder="Enter 10-digit mobile number (numbers only)"
+                    maxLength={10}
                   />
                 </div>
               </div>

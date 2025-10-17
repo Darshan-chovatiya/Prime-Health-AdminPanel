@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Slot } from "../../services/api";
+import swal from "../../utils/swalHelper";
 
 interface SlotModalProps {
   slot?: Slot;
@@ -42,13 +43,46 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
     e.preventDefault();
     
     if (!formData.doctorId || !formData.startTime || !formData.endTime) {
-      alert("Please fill in all required fields");
+      swal.error("Validation Error", "Please fill in all required fields");
       return;
     }
 
-    if (new Date(formData.startTime) >= new Date(formData.endTime)) {
-      alert("End time must be after start time");
+    // Parse dates and validate
+    const startDate = new Date(formData.startTime);
+    const endDate = new Date(formData.endTime);
+    
+    // Check if dates are valid
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      swal.error("Invalid Date", "Please enter valid start and end times");
       return;
+    }
+
+    // Check if end time is after start time
+    if (startDate >= endDate) {
+      swal.error("Invalid Time Range", "End time must be after start time");
+      return;
+    }
+
+    // Check if start time is in the future (only for new slots, not when editing)
+    if (!slot) {
+      const now = new Date();
+      if (startDate <= now) {
+        swal.error("Invalid Start Time", "Start time must be in the future");
+        return;
+      }
+    }
+
+    // Validate recurring slot end date if recurring is enabled
+    if (formData.isRecurring && formData.recurrenceDetails.endDate) {
+      const recurrenceEndDate = new Date(formData.recurrenceDetails.endDate);
+      if (isNaN(recurrenceEndDate.getTime())) {
+        swal.error("Invalid Recurrence End Date", "Please enter a valid recurrence end date");
+        return;
+      }
+      if (recurrenceEndDate <= startDate) {
+        swal.error("Invalid Recurrence End Date", "Recurrence end date must be after the start time");
+        return;
+      }
     }
 
     const submitData = {
@@ -57,7 +91,7 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
       endTime: new Date(formData.endTime).toISOString(),
       recurrenceDetails: formData.isRecurring ? {
         ...formData.recurrenceDetails,
-        endDate: new Date(formData.recurrenceDetails.endDate).toISOString(),
+        endDate: formData.recurrenceDetails.endDate ? new Date(formData.recurrenceDetails.endDate).toISOString() : undefined,
       } : undefined,
     };
 
@@ -127,6 +161,7 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                 type="datetime-local"
                 value={formData.startTime}
                 onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                min={slot ? undefined : new Date().toISOString().slice(0, 16)}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 required
               />
@@ -140,6 +175,7 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                 type="datetime-local"
                 value={formData.endTime}
                 onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                min={formData.startTime || (slot ? undefined : new Date().toISOString().slice(0, 16))}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 required
               />
@@ -196,6 +232,7 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                       endDate: e.target.value 
                     }
                   })}
+                  min={formData.startTime ? new Date(formData.startTime).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>

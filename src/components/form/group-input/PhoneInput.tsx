@@ -37,9 +37,12 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPhoneNumber = e.target.value;
-    setPhoneNumber(newPhoneNumber);
-    if (onChange) {
-      onChange(newPhoneNumber);
+    // Only allow numbers, spaces, parentheses, hyphens, and plus sign
+    if (/^[\d\s\(\)\-\+]*$/.test(newPhoneNumber)) {
+      setPhoneNumber(newPhoneNumber);
+      if (onChange) {
+        onChange(newPhoneNumber);
+      }
     }
   };
 

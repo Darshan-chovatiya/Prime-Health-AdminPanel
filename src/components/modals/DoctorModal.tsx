@@ -198,12 +198,18 @@ export default function DoctorModal({
                 Mobile Number *
               </label>
               <input
-                type="tel"
+                type="text"
                 value={formData.mobileNo}
-                onChange={(e) =>
-                  setFormData({ ...formData, mobileNo: e.target.value })
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Only allow numbers
+                  if (/^\d*$/.test(value)) {
+                    setFormData({ ...formData, mobileNo: value });
+                  }
+                }}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                placeholder="Enter mobile number (numbers only)"
+                maxLength={10}
                 required
               />
             </div>

@@ -172,6 +172,8 @@ export interface Booking {
 export interface DashboardStats {
   totalPatients: number;
   totalDoctors: number;
+  activeDoctors: number;
+  availableToday: number;
   todaysAppointments: number;
   availableSlotsToday: number;
   monthlyRevenue: number;
@@ -209,6 +211,11 @@ class ApiService {
       const data = await response.json();
       
       if (!response.ok) {
+        // Handle validation errors from backend
+        if (data.errors && Array.isArray(data.errors)) {
+          const errorMessages = data.errors.map((err: any) => err.message).join(', ');
+          throw new Error(errorMessages);
+        }
         throw new Error(data.message || 'Request failed');
       }
       
