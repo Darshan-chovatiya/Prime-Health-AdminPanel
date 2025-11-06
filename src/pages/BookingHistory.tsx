@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import apiService, { Booking } from "../services/api";
+import apiService, { Booking, Patient, Doctor } from "../services/api";
 import swal from '../utils/swalHelper';
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
@@ -19,6 +19,8 @@ export default function BookingHistory() {
   const [limit, setLimit] = useState(10);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -335,8 +337,19 @@ export default function BookingHistory() {
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                   {bookings.length > 0 ? (
                     bookings.map((booking) => {
-                      const doctor = doctors.find(d => d._id === booking.doctorId);
-                      const patient = patients.find(p => p._id === booking.patientId);
+                      // Handle populated data from backend
+                      const patient: Patient | undefined = typeof booking.patientId === 'object' && booking.patientId !== null 
+                        ? booking.patientId as Patient 
+                        : patients.find(p => p._id === booking.patientId);
+                      
+                      const doctor: Doctor | undefined = typeof booking.doctorId === 'object' && booking.doctorId !== null
+                        ? booking.doctorId as Doctor
+                        : doctors.find(d => d._id === booking.doctorId);
+                      
+                      const service = typeof booking.serviceId === 'object' && booking.serviceId !== null
+                        ? booking.serviceId
+                        : null;
+
                       return (
                         <tr key={booking._id}>
                           <td className="px-6 py-4">
@@ -369,10 +382,12 @@ export default function BookingHistory() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-sm font-medium text-gray-800 dark:text-white/90">
-                              {doctor ? `Dr. ${doctor.name}` : 'Unknown Doctor'}
+                              {doctor ? (doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`) : 'Unknown Doctor'}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {doctor?.specialty || 'N/A'}
+                              {typeof doctor?.specialty === 'object' && doctor?.specialty?.name 
+                                ? doctor.specialty.name 
+                                : doctor?.specialty || 'N/A'}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -385,7 +400,7 @@ export default function BookingHistory() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-sm text-gray-800 dark:text-white/90">
-                              {booking.serviceId?.name || 'General Consultation'}
+                              {service?.name || 'General Consultation'}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -407,7 +422,10 @@ export default function BookingHistory() {
                             <div className="flex space-x-2">
                               <ActionButton 
                                 type="view"
-                                onClick={() => {}} // Add view functionality here
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setIsModalOpen(true);
+                                }}
                               />
                               {booking.status !== 'completed' && booking.status !== 'cancelled' && (
                                 <>
@@ -449,6 +467,269 @@ export default function BookingHistory() {
           </div>
         </div>
       </div>
+
+      {/* Booking Details Modal */}
+      {isModalOpen && selectedBooking && (
+        <div 
+          className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Booking Details</h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                {/* Patient Header */}
+                <div className="flex items-center space-x-4">
+                  {typeof selectedBooking.patientId === 'object' && selectedBooking.patientId !== null ? (
+                    <>
+                      {selectedBooking.patientId.profileImage ? (
+                        <img className="h-16 w-16 rounded-full" src={selectedBooking.patientId.profileImage} alt="Patient" />
+                      ) : (
+                        <div className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <svg className="h-8 w-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="text-xl font-semibold text-gray-900 dark:text-white">{selectedBooking.patientId.name}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{selectedBooking.patientId.email || selectedBooking.patientId.mobileNo}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-gray-500 dark:text-gray-400">Patient information not available</div>
+                  )}
+                </div>
+
+                {/* Booking Status */}
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+                  <span className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
+                    selectedBooking.status === 'completed' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                      : selectedBooking.status === 'cancelled'
+                      ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                      : selectedBooking.status === 'no-show'
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400'
+                      : selectedBooking.status === 'confirmed'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-400'
+                  }`}>
+                    {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
+                  </span>
+                </div>
+
+                {/* Doctor Information */}
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Doctor Information</h5>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                    {typeof selectedBooking.doctorId === 'object' && selectedBooking.doctorId !== null ? (
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {selectedBooking.doctorId.name.startsWith('Dr.') ? selectedBooking.doctorId.name : `Dr. ${selectedBooking.doctorId.name}`}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{selectedBooking.doctorId.email}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {typeof selectedBooking.doctorId.specialty === 'object' && selectedBooking.doctorId.specialty?.name 
+                            ? selectedBooking.doctorId.specialty.name 
+                            : selectedBooking.doctorId.specialty || 'N/A'}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 dark:text-gray-400">Doctor information not available</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Appointment Details */}
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Appointment Details</h5>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg space-y-2">
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Booking ID: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        #{selectedBooking.bookingId || selectedBooking._id.slice(-6).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Date: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(selectedBooking.appointmentDate).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Time: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{selectedBooking.appointmentTime}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Consultation Type: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">{selectedBooking.consultationType}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Service: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {typeof selectedBooking.serviceId === 'object' && selectedBooking.serviceId !== null
+                          ? selectedBooking.serviceId.name
+                          : 'General Consultation'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Details */}
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Details</h5>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg space-y-2">
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Amount: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        ₹{typeof selectedBooking.amount === 'string' ? selectedBooking.amount : selectedBooking.amount}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Payment Status: </span>
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                        selectedBooking.paymentStatus === 'paid' 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                          : selectedBooking.paymentStatus === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                      }`}>
+                        {selectedBooking.paymentStatus.charAt(0).toUpperCase() + selectedBooking.paymentStatus.slice(1)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Payment Method: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">{selectedBooking.paymentMethod}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Medical Information */}
+                {(selectedBooking.notes || selectedBooking.prescription || selectedBooking.diagnosis) && (
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Medical Information</h5>
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg space-y-3">
+                      {selectedBooking.notes && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{selectedBooking.notes}</p>
+                        </div>
+                      )}
+                      {selectedBooking.diagnosis && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Diagnosis</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{selectedBooking.diagnosis}</p>
+                        </div>
+                      )}
+                      {selectedBooking.prescription && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prescription</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{selectedBooking.prescription}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Information */}
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Additional Information</h5>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg space-y-2">
+                    <div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Follow-up Required: </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {selectedBooking.followUpRequired ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    {selectedBooking.followUpDate && (
+                      <div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Follow-up Date: </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {new Date(selectedBooking.followUpDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    {selectedBooking.cancellationReason && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cancellation Reason</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{selectedBooking.cancellationReason}</p>
+                      </div>
+                    )}
+                    {selectedBooking.cancelledBy && (
+                      <div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Cancelled By: </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">{selectedBooking.cancelledBy}</span>
+                      </div>
+                    )}
+                    {selectedBooking.rating && (
+                      <div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Rating: </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {typeof selectedBooking.rating === 'string' ? selectedBooking.rating : selectedBooking.rating}/5
+                        </span>
+                      </div>
+                    )}
+                    {selectedBooking.review && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Review</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{selectedBooking.review}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Timestamps */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Created</h5>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      {new Date(selectedBooking.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Last Updated</h5>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      {new Date(selectedBooking.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

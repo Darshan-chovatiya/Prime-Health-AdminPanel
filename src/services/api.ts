@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3200/api/admin';
+const API_BASE_URL = 'http://localhost:3300/api/admin';
 // const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
 // const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
 
@@ -143,11 +143,11 @@ export interface Slot {
 
 export interface Booking {
   _id: string;
-  bookingId: string;
-  patientId: string;
-  doctorId: any;
-  slotId: string;
-  serviceId: any;
+  bookingId?: string;
+  patientId: string | Patient;
+  doctorId: string | Doctor | any;
+  slotId: string | null;
+  serviceId: string | Service | any;
   appointmentDate: string;
   appointmentTime: string;
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
@@ -156,14 +156,14 @@ export interface Booking {
   prescription?: string;
   diagnosis?: string;
   followUpRequired: boolean;
-  followUpDate?: string;
+  followUpDate?: string | null;
   paymentStatus: 'pending' | 'paid' | 'refunded' | 'failed';
-  amount: number;
+  amount: number | string;
   paymentMethod: 'cash' | 'card' | 'online' | 'insurance';
   cancellationReason?: string;
-  cancelledBy?: 'patient' | 'doctor' | 'admin';
-  cancelledAt?: string;
-  rating?: number;
+  cancelledBy?: 'patient' | 'doctor' | 'admin' | null;
+  cancelledAt?: string | null;
+  rating?: number | string;
   review?: string;
   createdAt: string;
   updatedAt: string;
@@ -646,6 +646,12 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
 
   async getDepartmentStats(): Promise<ApiResponse> {
     return this.request('/dashboard/departments');
+  }
+
+  async getComprehensiveStats(period: 'week' | 'month' | 'year' = 'month'): Promise<ApiResponse> {
+    return this.request('/dashboard/comprehensive', {
+      body: JSON.stringify({ period }),
+    });
   }
 }
 

@@ -2,28 +2,70 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import apiService, { DashboardStats } from "../../services/api";
 import swal from '../../utils/swalHelper';
+import Chart from "react-apexcharts";
+import { ApexOptions } from "apexcharts";
 
 export default function Home() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [comprehensiveData, setComprehensiveData] = useState<any>(null);
+  const [appointmentData, setAppointmentData] = useState<any>(null);
+  const [barChartLoading, setBarChartLoading] = useState(false);
+  const [pieChartLoading, setPieChartLoading] = useState(false);
+  const [barChartPeriod, setBarChartPeriod] = useState<'week' | 'month' | 'year'>('month');
+  const [pieChartPeriod, setPieChartPeriod] = useState<'week' | 'month' | 'year'>('month');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchDashboardStats = async () => {
-      try {
-        setLoading(true);
-        const response = await apiService.getDashboardStats();
-        setStats(response.data);
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-        swal.error('Error', 'Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardStats();
   }, []);
+
+  useEffect(() => {
+    fetchBarChartData();
+  }, [barChartPeriod]);
+
+  useEffect(() => {
+    fetchPieChartData();
+  }, [pieChartPeriod]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getDashboardStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      swal.error('Error', 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBarChartData = async () => {
+    try {
+      setBarChartLoading(true);
+      // Fetch comprehensive stats for bar chart
+      const comprehensiveResponse = await apiService.getComprehensiveStats(barChartPeriod);
+      setComprehensiveData(comprehensiveResponse.data);
+    } catch (error) {
+      console.error('Error fetching bar chart data:', error);
+    } finally {
+      setBarChartLoading(false);
+    }
+  };
+
+  const fetchPieChartData = async () => {
+    try {
+      setPieChartLoading(true);
+      // Fetch appointment stats for pie chart
+      const appointmentResponse = await apiService.getAppointmentStats(pieChartPeriod);
+      setAppointmentData(appointmentResponse.data);
+    } catch (error) {
+      console.error('Error fetching pie chart data:', error);
+    } finally {
+      setPieChartLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -33,8 +75,230 @@ export default function Home() {
     );
   }
 
+  // Prepare data for bar chart
+  const prepareBarChartData = () => {
+    // Get all unique dates from all data sources
+    const appointmentDates = comprehensiveData?.dailyAppointments?.map((item: any) => item._id) || [];
+    const patientDates = comprehensiveData?.dailyPatients?.map((item: any) => item._id) || [];
+    const doctorDates = comprehensiveData?.dailyDoctors?.map((item: any) => item._id) || [];
+    const slotDates = comprehensiveData?.dailySlots?.map((item: any) => item._id) || [];
+    
+    // Get all unique dates
+    const allDates = [...new Set([...appointmentDates, ...patientDates, ...doctorDates, ...slotDates])].sort();
+    
+    const appointmentsData = allDates.map((date: string) => {
+      const appointment = comprehensiveData?.dailyAppointments?.find((item: any) => item._id === date);
+      return Number(appointment?.total) || 0;
+    });
+
+    const patientsData = allDates.map((date: string) => {
+      const patient = comprehensiveData?.dailyPatients?.find((item: any) => item._id === date);
+      return Number(patient?.count) || 0;
+    });
+
+    const doctorsData = allDates.map((date: string) => {
+      const doctor = comprehensiveData?.dailyDoctors?.find((item: any) => item._id === date);
+      return Number(doctor?.count) || 0;
+    });
+
+    const slotsData = allDates.map((date: string) => {
+      const slot = comprehensiveData?.dailySlots?.find((item: any) => item._id === date);
+      return Number(slot?.total) || 0;
+    });
+
+    return {
+      categories: allDates.map((date: string) => 
+        new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      ),
+      appointments: appointmentsData,
+      patients: patientsData,
+      doctors: doctorsData,
+      slots: slotsData,
+    };
+  };
+
+  const chartData = prepareBarChartData();
+
+  // Calculate max value for y-axis and create ticks in increments of 2
+  const getAllValues = () => {
+    return [...chartData.appointments, ...chartData.patients, ...chartData.doctors, ...chartData.slots];
+  };
+  
+  const maxValue = Math.max(...getAllValues(), 0);
+  const maxTick = Math.ceil(maxValue / 2) * 2; // Round up to nearest even number
+  const ticks = [];
+  for (let i = 0; i <= maxTick; i += 2) {
+    ticks.push(i);
+  }
+
+  // Comprehensive Dashboard Bar Chart Configuration
+  const dashboardBarChartOptions: ApexOptions = {
+    chart: {
+      fontFamily: "Outfit, sans-serif",
+      type: "bar",
+      height: 450,
+      toolbar: { show: false },
+    },
+    colors: ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899"],
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: "55%",
+        borderRadius: 5,
+        dataLabels: {
+          position: "top",
+        },
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function(val: number) {
+        return val.toString();
+      },
+      offsetY: -20,
+      style: {
+        fontSize: "11px",
+        colors: ["#6B7280"],
+        fontWeight: 500,
+      },
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ["transparent"],
+    },
+    grid: {
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
+    },
+    xaxis: {
+      categories: chartData.categories,
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: {
+        style: { fontSize: "12px", colors: ["#6B7280"] },
+      },
+    },
+    yaxis: {
+      title: {
+        text: "Count",
+        style: { fontSize: "12px", color: "#6B7280" },
+      },
+      labels: {
+        style: { fontSize: "12px", colors: ["#6B7280"] },
+        formatter: function(val: number) {
+          // Only show even numbers (0, 2, 4, 6, 8, etc.)
+          return val % 2 === 0 ? val.toString() : '';
+        },
+      },
+      min: 0,
+      max: Math.max(maxTick || 8, 8),
+      tickAmount: Math.max(Math.floor(maxTick / 2), 4),
+      forceNiceScale: false,
+    },
+    fill: {
+      opacity: 1,
+    },
+    tooltip: {
+      shared: true,
+      intersect: false,
+      y: [
+        {
+          formatter: (val: number) => `${val} appointments`,
+        },
+        {
+          formatter: (val: number) => `${val} patients`,
+        },
+        {
+          formatter: (val: number) => `${val} doctors`,
+        },
+        {
+          formatter: (val: number) => `${val} slots`,
+        },
+      ],
+    },
+    legend: {
+      show: true,
+      position: "top",
+      horizontalAlign: "left",
+      fontSize: "13px",
+    },
+  };
+
+  const dashboardBarChartSeries = [
+    {
+      name: "Total Appointments",
+      data: chartData.appointments,
+    },
+    {
+      name: "Total Patients",
+      data: chartData.patients,
+    },
+    {
+      name: "Total Doctors",
+      data: chartData.doctors,
+    },
+    {
+      name: "Total Slots",
+      data: chartData.slots,
+    },
+  ];
+
+  // Status Breakdown Pie Chart
+  const statusChartOptions: ApexOptions = {
+    chart: {
+      fontFamily: "Outfit, sans-serif",
+      type: "donut",
+      height: 350,
+    },
+    colors: ["#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#8b5cf6", "#06b6d4"],
+    labels: appointmentData?.statusBreakdown?.map((item: any) => 
+      item._id.charAt(0).toUpperCase() + item._id.slice(1)
+    ) || [],
+    legend: {
+      position: "bottom",
+      horizontalAlign: "center",
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: (val: number) => `${val.toFixed(1)}%`,
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: "65%",
+          labels: {
+            show: true,
+            name: { show: true, fontSize: "14px" },
+            value: { show: true, fontSize: "16px", fontWeight: 600 },
+            total: {
+              show: true,
+              label: "Total",
+              formatter: () => {
+                const total = appointmentData?.statusBreakdown?.reduce((sum: number, item: any) => sum + item.count, 0) || 0;
+                return total.toString();
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const statusChartSeries = appointmentData?.statusBreakdown?.map((item: any) => Number(item.count) || 0) || [];
+
+
   return (
     <>
+      {/* Period Selector */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard Overview</h2>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Welcome back! Here's what's happening with your practice today.
+          </p>
+        </div>
+      </div>
 
       {/* Key Metrics */}
       <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -79,7 +343,9 @@ export default function Home() {
                 <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">Doctors</span>
+                <span className="ml-1 text-sm text-green-600 dark:text-green-400">
+                  {stats?.activeDoctors || 0} Active Doctors
+                </span>
               </div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 dark:bg-green-500/20">
@@ -113,32 +379,6 @@ export default function Home() {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-500/20">
               <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Revenue */}
-        <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
-          onClick={() => navigate('/booking-history')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Revenue</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                ${(stats?.monthlyRevenue || 0).toLocaleString()}
-              </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
-                </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">This month</span>
-              </div>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/20">
-              <svg className="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
             </div>
           </div>
@@ -196,6 +436,34 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Total Doctors */}
+        <div 
+          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          onClick={() => navigate('/doctors-labs')}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Doctors</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                {stats?.totalDoctors?.toLocaleString() || '0'}
+              </p>
+              <div className="mt-2 flex items-center">
+                <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
+                </svg>
+                <span className="ml-1 text-sm text-green-600 dark:text-green-400">
+                  {stats?.activeDoctors || 0} Active
+                </span>
+              </div>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 dark:bg-green-500/20">
+              <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
         {/* Available Slots Today */}
         <div 
           className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
@@ -220,6 +488,100 @@ export default function Home() {
               </svg>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Comprehensive Dashboard Bar Chart */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Dashboard Overview</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Comprehensive view for {barChartPeriod.charAt(0).toUpperCase() + barChartPeriod.slice(1)}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={barChartPeriod}
+                onChange={(e) => setBarChartPeriod(e.target.value as 'week' | 'month' | 'year')}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                <option value="week">Week</option>
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+              </select>
+            </div>
+          </div>
+          {barChartLoading ? (
+            <div className="flex h-[450px] items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            </div>
+          ) : comprehensiveData && chartData.categories.length > 0 && (chartData.appointments.some((v: number) => v > 0) || chartData.patients.some((v: number) => v > 0) || chartData.doctors.some((v: number) => v > 0) || chartData.slots.some((v: number) => v > 0)) ? (
+            <Chart 
+              options={{...dashboardBarChartOptions, xaxis: {...dashboardBarChartOptions.xaxis, categories: chartData.categories}}} 
+              series={dashboardBarChartSeries} 
+              type="bar" 
+              height={450} 
+            />
+          ) : (
+            <div className="flex h-[450px] items-center justify-center text-gray-400">
+              <div className="text-center">
+                <svg className="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <p>No dashboard data available</p>
+                <p className="text-xs mt-1">Data will appear here once activities are recorded</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Appointment Status Pie Chart */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Appointment Status</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Breakdown by status for {pieChartPeriod.charAt(0).toUpperCase() + pieChartPeriod.slice(1)}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={pieChartPeriod}
+                onChange={(e) => setPieChartPeriod(e.target.value as 'week' | 'month' | 'year')}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                <option value="week">Week</option>
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+              </select>
+            </div>
+          </div>
+          {pieChartLoading ? (
+            <div className="flex h-[400px] items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            </div>
+          ) : statusChartSeries.length > 0 && statusChartSeries.some((val: number) => val > 0) ? (
+            <Chart 
+              options={statusChartOptions} 
+              series={statusChartSeries} 
+              type="donut" 
+              height={400} 
+            />
+          ) : (
+            <div className="flex h-[400px] items-center justify-center text-gray-400">
+              <div className="text-center">
+                <svg className="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                </svg>
+                <p>No status data available</p>
+                <p className="text-xs mt-1">Status breakdown will appear here once appointments are made</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -316,7 +678,36 @@ export default function Home() {
             </div>
           </div>
 
-          
+          {/* Summary Stats */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+            <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Appointment Summary</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Total Appointments</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {appointmentData?.statusBreakdown?.reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0) || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Completed</span>
+                <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                  {Number(appointmentData?.statusBreakdown?.find((s: any) => s._id === 'completed')?.count) || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Scheduled</span>
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                  {Number(appointmentData?.statusBreakdown?.find((s: any) => s._id === 'scheduled')?.count) || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Cancelled</span>
+                <span className="text-sm font-semibold text-red-600 dark:text-red-400">
+                  {Number(appointmentData?.statusBreakdown?.find((s: any) => s._id === 'cancelled')?.count) || 0}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
