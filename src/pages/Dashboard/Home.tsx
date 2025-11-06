@@ -240,7 +240,7 @@ export default function Home() {
       height: 450,
       toolbar: { show: false },
     },
-    colors: ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899"],
+    colors: ["#34d399", "#60a5fa", "#fbbf24", "#a78bfa", "#f472b6"],
     plotOptions: {
       bar: {
         horizontal: false,
@@ -356,7 +356,7 @@ export default function Home() {
       type: "donut",
       height: 350,
     },
-    colors: ["#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#8b5cf6", "#06b6d4"],
+    colors: ["#60a5fa", "#34d399", "#f87171", "#fbbf24", "#a78bfa", "#22d3ee"],
     labels: appointmentData?.statusBreakdown?.map((item: any) => 
       item._id.charAt(0).toUpperCase() + item._id.slice(1)
     ) || [],
