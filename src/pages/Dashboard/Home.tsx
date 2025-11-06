@@ -758,14 +758,14 @@ export default function Home() {
                 Breakdown by status for {pieChartPeriod.charAt(0).toUpperCase() + pieChartPeriod.slice(1)}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2" style={{paddingRight:"2px"}}>
               <select
                 value={pieChartPeriod}
                 onChange={(e) => setPieChartPeriod(e.target.value as 'week' | 'month' | 'year')}
                 className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 <option value="week">Week</option>
-                <option value="month">Month</option>
+                <option value="month">  Month</option>
                 <option value="year">Year</option>
               </select>
             </div>
