@@ -16,6 +16,7 @@ export default function Home() {
   const [pieChartPeriod, setPieChartPeriod] = useState<'week' | 'month' | 'year'>('month');
   const [recentDoctors, setRecentDoctors] = useState<Doctor[]>([]);
   const [recentSlots, setRecentSlots] = useState<Slot[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchPieChartData();
+    setSelectedStatus(null); // Reset selection when period changes
   }, [pieChartPeriod]);
 
   const fetchDashboardStats = async () => {
@@ -74,7 +76,7 @@ export default function Home() {
   const fetchRecentDoctors = async () => {
     try {
       const response = await apiService.getDoctors({ 
-        limit: 4, 
+        limit: 2, 
         sortBy: 'createdAt', 
         sortOrder: 'desc' 
       });
@@ -89,7 +91,7 @@ export default function Home() {
   const fetchRecentSlots = async () => {
     try {
       const response = await apiService.getSlots({ 
-        limit: 4, 
+        limit: 2, 
         sortBy: 'createdAt', 
         sortOrder: 'desc' 
       });
@@ -252,16 +254,7 @@ export default function Home() {
       },
     },
     dataLabels: {
-      enabled: true,
-      formatter: function(val: number) {
-        return val.toString();
-      },
-      offsetY: -20,
-      style: {
-        fontSize: "11px",
-        colors: ["#6B7280"],
-        fontWeight: 500,
-      },
+      enabled: false,
     },
     stroke: {
       show: true,
@@ -349,24 +342,93 @@ export default function Home() {
   const statusChartSeries = appointmentData?.statusBreakdown?.map((item: any) => Number(item.count) || 0) || [];
   const totalAppointments = statusChartSeries.reduce((sum: number, val: number) => sum + val, 0);
 
-  // Status Breakdown Pie Chart
+  // Status Breakdown Pie Chart - Same Color Series as Bar Chart
+  // Bar Chart Colors: ["#34d399", "#60a5fa", "#fbbf24", "#a78bfa", "#f472b6"]
+  const appointmentStatusColors: { [key: string]: string } = {
+    scheduled: "#34d399",   // Green (emerald) - same as bar chart first color
+    confirmed: "#60a5fa",   // Blue - same as bar chart second color
+    completed: "#52bfb3",   // Yellow/Amber - same as bar chart third color
+    cancelled: "#a78bfa",   // Purple - same as bar chart fourth color
+    no_show: "#f472b6",     // Pink - same as bar chart fifth color
+    rescheduled: "#fb923c"  // Orange shade
+  };
+
+  // Function to get color for a specific status
+  const getStatusColor = (statusId: string): string => {
+    return appointmentStatusColors[statusId] || "#9CA3AF"; // Default gray if status not found
+  };
+
+  // Handle status click
+  const handleStatusClick = (statusId: string) => {
+    if (selectedStatus === statusId) {
+      // If clicking the same status, deselect it
+      setSelectedStatus(null);
+    } else {
+      // Select the clicked status
+      setSelectedStatus(statusId);
+    }
+  };
+
+  // Get opacity for each segment based on selection
+  const getSegmentOpacity = (index: number) => {
+    if (!selectedStatus) return 1; // All segments fully visible when none selected
+    const statusId = appointmentData?.statusBreakdown?.[index]?._id;
+    return selectedStatus === statusId ? 1 : 0.3; // Selected segment fully visible, others dimmed
+  };
+
+  // Create colors array with opacity based on selection
+  const getStatusColors = () => {
+    if (!appointmentData?.statusBreakdown) return [];
+    
+    const colors = appointmentData.statusBreakdown.map((item: any, index: number) => {
+      const color = getStatusColor(item._id);
+      if (!selectedStatus) return color;
+      
+      const opacity = getSegmentOpacity(index);
+      // Convert hex to rgba for opacity support
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    });
+    
+    return colors;
+  };
+
   const statusChartOptions: ApexOptions = {
     chart: {
       fontFamily: "Outfit, sans-serif",
       type: "donut",
       height: 350,
+      events: {
+        dataPointSelection: (_event: any, _chartContext: any, config: any) => {
+          // Handle click on chart segment
+          const statusId = appointmentData?.statusBreakdown?.[config.dataPointIndex]?._id;
+          if (statusId) {
+            handleStatusClick(statusId);
+          }
+        },
+      },
     },
-    colors: ["#60a5fa", "#34d399", "#f87171", "#fbbf24", "#a78bfa", "#22d3ee"],
+    colors: getStatusColors(),
     labels: appointmentData?.statusBreakdown?.map((item: any) => 
-      item._id.charAt(0).toUpperCase() + item._id.slice(1)
+      item._id
+        .split('_')
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
     ) || [],
     legend: {
-      position: "bottom",
-      horizontalAlign: "center",
+      show: false, // Hide default legend
     },
     dataLabels: {
       enabled: true,
       formatter: (val: number) => `${val.toFixed(1)}%`,
+      style: {
+        colors: appointmentData?.statusBreakdown?.map(() => '#FFFFFF') || ['#FFFFFF'], // White color for all percentage text
+      },
+      dropShadow: {
+        enabled: false,
+      },
     },
     tooltip: {
       theme: 'light',
@@ -393,6 +455,18 @@ export default function Home() {
               },
             },
           },
+        },
+      },
+    },
+    states: {
+      hover: {
+        filter: {
+          type: 'darken',
+        },
+      },
+      active: {
+        filter: {
+          type: 'darken',
         },
       },
     },
@@ -677,7 +751,7 @@ export default function Home() {
 
         {/* Appointment Status Pie Chart */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-12 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Appointment Status</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -696,27 +770,142 @@ export default function Home() {
               </select>
             </div>
           </div>
-          {pieChartLoading ? (
-            <div className="flex h-[400px] items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="flex items-center gap-6">
+            <div className="flex-1">
+              {pieChartLoading ? (
+                <div className="flex h-[400px] items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+                </div>
+              ) : statusChartSeries.length > 0 && statusChartSeries.some((val: number) => val > 0) ? (
+                <Chart 
+                  key={`status-chart-${selectedStatus || 'all'}-${pieChartPeriod}`}
+                  options={statusChartOptions} 
+                  series={statusChartSeries} 
+                  type="donut" 
+                  height={400} 
+                />
+              ) : (
+                <div className="flex h-[400px] items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <svg className="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    </svg>
+                    <p>No status data available</p>
+                    <p className="text-xs mt-1">Status breakdown will appear here once appointments are made</p>
+                  </div>
+                </div>
+              )}
             </div>
-          ) : statusChartSeries.length > 0 && statusChartSeries.some((val: number) => val > 0) ? (
-            <Chart 
-              options={statusChartOptions} 
-              series={statusChartSeries} 
-              type="donut" 
-              height={400} 
-            />
-          ) : (
-            <div className="flex h-[400px] items-center justify-center text-gray-400">
-              <div className="text-center">
-                <svg className="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                </svg>
-                <p>No status data available</p>
-                <p className="text-xs mt-1">Status breakdown will appear here once appointments are made</p>
+            {/* Custom Status Cards - Beside chart */}
+            {appointmentData?.statusBreakdown && appointmentData.statusBreakdown.length > 0 && (
+              <div className="flex flex-col gap-1.5 bg-white dark:bg-white/[0.03] rounded-lg p-2 pt-6">
+                {appointmentData.statusBreakdown.map((item: any) => {
+                  const statusName = item._id
+                    .split('_')
+                    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+                  const isSelected = selectedStatus === item._id;
+                  const statusColor = getStatusColor(item._id);
+                  return (
+                    <div 
+                      key={item._id} 
+                      onClick={() => handleStatusClick(item._id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        isSelected 
+                          ? 'bg-gray-100 dark:bg-gray-800 border-2' 
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-2 border-transparent'
+                      }`}
+                      style={isSelected ? { borderColor: statusColor } : {}}
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-full flex-shrink-0 transition-all duration-200"
+                        style={{ 
+                          backgroundColor: statusColor,
+                          border: isSelected ? `2px solid ${statusColor}` : 'none',
+                          opacity: isSelected ? 1 : (selectedStatus ? 0.3 : 1)
+                        }}
+                      ></div>
+                      <span 
+                        className={`text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                          isSelected 
+                            ? 'text-gray-900 dark:text-white font-semibold' 
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                        style={{ opacity: isSelected ? 1 : (selectedStatus ? 0.3 : 1) }}
+                      >
+                        {statusName}
+                      </span>
+                      {isSelected && (
+                        <svg 
+                          className="w-4 h-4 ml-auto flex-shrink-0" 
+                          style={{ color: statusColor }}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Bookings */}
+      <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Bookings</h3>
+          <button 
+            className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+            onClick={() => navigate('/booking-history')}
+          >
+            View All
+          </button>
+        </div>
+        <div className="space-y-4">
+          {stats?.recentBookings && stats.recentBookings.length > 0 ? (
+            stats.recentBookings.map((booking: any) => (
+              <div key={booking._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-800">
+                <div className="flex items-center">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-500/20">
+                    <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {booking.patientId?.name || 'Unknown Patient'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {booking.doctorId?.name || 'Unknown Doctor'} • {booking.serviceId?.name || 'Service'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {new Date(booking.appointmentDate).toLocaleDateString()}
+                  </p>
+                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                    booking.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400' :
+                    booking.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400' :
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400'
+                  }`}>
+                    {booking.status}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No recent bookings</p>
             </div>
           )}
         </div>
@@ -853,131 +1042,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left Column - Recent Activity */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Recent Bookings */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Bookings</h3>
-              <button 
-                className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
-                onClick={() => navigate('/booking-history')}
-              >
-                View All
-              </button>
-            </div>
-            <div className="space-y-4">
-              {stats?.recentBookings && stats.recentBookings.length > 0 ? (
-                stats.recentBookings.map((booking: any) => (
-                  <div key={booking._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-800">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-500/20">
-                        <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {booking.patientId?.name || 'Unknown Patient'}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {booking.doctorId?.name || 'Unknown Doctor'} • {booking.serviceId?.name || 'Service'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {new Date(booking.appointmentDate).toLocaleDateString()}
-                      </p>
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                        booking.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400' :
-                        booking.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400' :
-                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400'
-                      }`}>
-                        {booking.status}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No recent bookings</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Quick Actions and Stats */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
-            <div className="space-y-3">
-              <button 
-                className="w-full rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white hover:bg-green-700 transition-colors"
-                onClick={() => navigate('/patients')}
-              >
-                Add New Patient
-              </button>
-              <button 
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-                onClick={() => navigate('/slots')}
-              >
-                Schedule Appointment
-              </button>
-              <button 
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-                onClick={() => navigate('/booking-history')}
-              >
-                View Reports
-              </button>
-              <button 
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-                onClick={() => navigate('/doctors-labs')}
-              >
-                Manage Doctors
-              </button>
-            </div>
-          </div>
-
-          {/* Summary Stats */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-            <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Appointment Summary</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Total Appointments</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {appointmentData?.statusBreakdown?.reduce((sum: number, item: any) => sum + (Number(item.count) || 0), 0) || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Completed</span>
-                <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                  {Number(appointmentData?.statusBreakdown?.find((s: any) => s._id === 'completed')?.count) || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Scheduled</span>
-                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                  {Number(appointmentData?.statusBreakdown?.find((s: any) => s._id === 'scheduled')?.count) || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Cancelled</span>
-                <span className="text-sm font-semibold text-red-600 dark:text-red-400">
-                  {Number(appointmentData?.statusBreakdown?.find((s: any) => s._id === 'cancelled')?.count) || 0}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </>
   );
 }
