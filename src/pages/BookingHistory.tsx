@@ -403,7 +403,9 @@ export default function BookingHistory() {
                             <div className="text-sm text-gray-500 dark:text-gray-400">
                               {typeof doctor?.specialty === 'object' && doctor?.specialty?.name 
                                 ? doctor.specialty.name 
-                                : doctor?.specialty || 'N/A'}
+                                : typeof doctor?.specialty === 'string' 
+                                  ? doctor.specialty 
+                                  : 'N/A'}
                             </div>
                           </td>
                           <td className="px-6 py-4">
