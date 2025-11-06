@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import apiService, { DashboardStats } from "../../services/api";
+import apiService, { DashboardStats, Doctor, Slot } from "../../services/api";
 import swal from '../../utils/swalHelper';
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
@@ -14,10 +14,14 @@ export default function Home() {
   const [pieChartLoading, setPieChartLoading] = useState(false);
   const [barChartPeriod, setBarChartPeriod] = useState<'week' | 'month' | 'year'>('month');
   const [pieChartPeriod, setPieChartPeriod] = useState<'week' | 'month' | 'year'>('month');
+  const [recentDoctors, setRecentDoctors] = useState<Doctor[]>([]);
+  const [recentSlots, setRecentSlots] = useState<Slot[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchRecentDoctors();
+    fetchRecentSlots();
   }, []);
 
   useEffect(() => {
@@ -67,6 +71,36 @@ export default function Home() {
     }
   };
 
+  const fetchRecentDoctors = async () => {
+    try {
+      const response = await apiService.getDoctors({ 
+        limit: 4, 
+        sortBy: 'createdAt', 
+        sortOrder: 'desc' 
+      });
+      if (response.data && response.data.docs) {
+        setRecentDoctors(response.data.docs);
+      }
+    } catch (error) {
+      console.error('Error fetching recent doctors:', error);
+    }
+  };
+
+  const fetchRecentSlots = async () => {
+    try {
+      const response = await apiService.getSlots({ 
+        limit: 4, 
+        sortBy: 'createdAt', 
+        sortOrder: 'desc' 
+      });
+      if (response.data && response.data.docs) {
+        setRecentSlots(response.data.docs);
+      }
+    } catch (error) {
+      console.error('Error fetching recent slots:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -106,15 +140,82 @@ export default function Home() {
       return Number(slot?.total) || 0;
     });
 
-    return {
-      categories: allDates.map((date: string) => 
-        new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      ),
-      appointments: appointmentsData,
-      patients: patientsData,
-      doctors: doctorsData,
-      slots: slotsData,
+    // Format categories based on selected period
+    const formatCategory = (date: string) => {
+      const dateObj = new Date(date);
+      if (barChartPeriod === 'year') {
+        // Show year only: 2024, 2025, 2026
+        return dateObj.getFullYear().toString();
+      } else if (barChartPeriod === 'month') {
+        // Show month name only: Sep, Oct, Nov
+        return dateObj.toLocaleDateString('en-US', { month: 'short' });
+      } else {
+        // Week: Show day and date
+        return dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      }
     };
+
+    // Group data by period for year and month
+    if (barChartPeriod === 'year') {
+      const groupedData: { [key: string]: { appointments: number; patients: number; doctors: number; slots: number } } = {};
+      
+      allDates.forEach((date: string, index: number) => {
+        const year = new Date(date).getFullYear().toString();
+        if (!groupedData[year]) {
+          groupedData[year] = { appointments: 0, patients: 0, doctors: 0, slots: 0 };
+        }
+        groupedData[year].appointments += appointmentsData[index];
+        groupedData[year].patients += patientsData[index];
+        groupedData[year].doctors += doctorsData[index];
+        groupedData[year].slots += slotsData[index];
+      });
+
+      const sortedYears = Object.keys(groupedData).sort();
+      return {
+        categories: sortedYears,
+        appointments: sortedYears.map(year => groupedData[year].appointments),
+        patients: sortedYears.map(year => groupedData[year].patients),
+        doctors: sortedYears.map(year => groupedData[year].doctors),
+        slots: sortedYears.map(year => groupedData[year].slots),
+      };
+    } else if (barChartPeriod === 'month') {
+      const groupedData: { [key: string]: { appointments: number; patients: number; doctors: number; slots: number } } = {};
+      
+      allDates.forEach((date: string, index: number) => {
+        const month = new Date(date).toLocaleDateString('en-US', { month: 'short' });
+        if (!groupedData[month]) {
+          groupedData[month] = { appointments: 0, patients: 0, doctors: 0, slots: 0 };
+        }
+        groupedData[month].appointments += appointmentsData[index];
+        groupedData[month].patients += patientsData[index];
+        groupedData[month].doctors += doctorsData[index];
+        groupedData[month].slots += slotsData[index];
+      });
+
+      // Sort months in chronological order
+      const monthOrder: { [key: string]: number } = {
+        'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+        'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+      };
+      const sortedMonths = Object.keys(groupedData).sort((a, b) => monthOrder[a] - monthOrder[b]);
+      
+      return {
+        categories: sortedMonths,
+        appointments: sortedMonths.map(month => groupedData[month].appointments),
+        patients: sortedMonths.map(month => groupedData[month].patients),
+        doctors: sortedMonths.map(month => groupedData[month].doctors),
+        slots: sortedMonths.map(month => groupedData[month].slots),
+      };
+    } else {
+      // Week: show daily data
+      return {
+        categories: allDates.map((date: string) => formatCategory(date)),
+        appointments: appointmentsData,
+        patients: patientsData,
+        doctors: doctorsData,
+        slots: slotsData,
+      };
+    }
   };
 
   const chartData = prepareBarChartData();
@@ -244,6 +345,10 @@ export default function Home() {
     },
   ];
 
+  // Calculate pie chart data
+  const statusChartSeries = appointmentData?.statusBreakdown?.map((item: any) => Number(item.count) || 0) || [];
+  const totalAppointments = statusChartSeries.reduce((sum: number, val: number) => sum + val, 0);
+
   // Status Breakdown Pie Chart
   const statusChartOptions: ApexOptions = {
     chart: {
@@ -263,6 +368,15 @@ export default function Home() {
       enabled: true,
       formatter: (val: number) => `${val.toFixed(1)}%`,
     },
+    tooltip: {
+      theme: 'light',
+      style: {
+        fontSize: '12px',
+      },
+      y: {
+        formatter: (val: number) => `${val} appointments`,
+      },
+    },
     plotOptions: {
       pie: {
         donut: {
@@ -273,10 +387,9 @@ export default function Home() {
             value: { show: true, fontSize: "16px", fontWeight: 600 },
             total: {
               show: true,
-              label: "Total",
+              label: "Total Appointments",
               formatter: () => {
-                const total = appointmentData?.statusBreakdown?.reduce((sum: number, item: any) => sum + item.count, 0) || 0;
-                return total.toString();
+                return totalAppointments.toString();
               },
             },
           },
@@ -284,8 +397,6 @@ export default function Home() {
       },
     },
   };
-
-  const statusChartSeries = appointmentData?.statusBreakdown?.map((item: any) => Number(item.count) || 0) || [];
 
 
   return (
@@ -301,27 +412,27 @@ export default function Home() {
       </div>
 
       {/* Key Metrics */}
-      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {/* Total Patients */}
         <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
           onClick={() => navigate('/patients')}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Patients</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {stats?.totalPatients?.toLocaleString() || '0'}
               </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">Active</span>
+                <span className="ml-1 text-xs text-green-600 dark:text-green-400">Active</span>
               </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-500/20">
-              <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
@@ -330,26 +441,26 @@ export default function Home() {
 
         {/* Available Today */}
         <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
           onClick={() => navigate('/doctors-labs')}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available Today</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {stats?.availableToday?.toLocaleString() || '0'}
               </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">
+                <span className="ml-1 text-xs text-green-600 dark:text-green-400">
                   {stats?.activeDoctors || 0} Active Doctors
                 </span>
               </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 dark:bg-green-500/20">
-              <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
@@ -358,26 +469,26 @@ export default function Home() {
 
         {/* Today's Appointments */}
         <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
           onClick={() => navigate('/booking-history')}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Today's Appointments</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {stats?.todaysAppointments?.toLocaleString() || '0'}
               </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="ml-1 text-sm text-blue-600 dark:text-blue-400">
+                <span className="ml-1 text-xs text-blue-600 dark:text-blue-400">
                   {stats?.availableSlotsToday || 0} available
                 </span>
               </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-500/20">
-              <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
@@ -386,24 +497,24 @@ export default function Home() {
 
         {/* Total Bookings */}
         <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
           onClick={() => navigate('/booking-history')}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Bookings</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {stats?.totalBookings?.toLocaleString() || '0'}
               </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
-                <span className="ml-1 text-sm text-blue-600 dark:text-blue-400">All time</span>
+                <span className="ml-1 text-xs text-blue-600 dark:text-blue-400">All time</span>
               </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-500/20">
-              <svg className="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
             </div>
@@ -412,24 +523,24 @@ export default function Home() {
 
         {/* Total Categories */}
         <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
           onClick={() => navigate('/categories')}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Categories</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {stats?.totalCategories?.toLocaleString() || '0'}
               </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                <span className="ml-1 text-sm text-purple-600 dark:text-purple-400">Services</span>
+                <span className="ml-1 text-xs text-purple-600 dark:text-purple-400">Services</span>
               </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-500/20">
-              <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
@@ -438,26 +549,26 @@ export default function Home() {
 
         {/* Total Doctors */}
         <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
           onClick={() => navigate('/doctors-labs')}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Doctors</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {stats?.totalDoctors?.toLocaleString() || '0'}
               </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                 </svg>
-                <span className="ml-1 text-sm text-green-600 dark:text-green-400">
+                <span className="ml-1 text-xs text-green-600 dark:text-green-400">
                   {stats?.activeDoctors || 0} Active
                 </span>
               </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 dark:bg-green-500/20">
-              <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
@@ -466,25 +577,51 @@ export default function Home() {
 
         {/* Available Slots Today */}
         <div 
-          className="group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
           onClick={() => navigate('/slots')}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available Slots</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {stats?.availableSlotsToday?.toLocaleString() || '0'}
               </p>
-              <div className="mt-2 flex items-center">
-                <svg className="h-4 w-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="ml-1 text-sm text-teal-600 dark:text-teal-400">Today</span>
+                <span className="ml-1 text-xs text-teal-600 dark:text-teal-400">Today</span>
               </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-500/20">
-              <svg className="h-6 w-6 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Slots */}
+        <div 
+          className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-lg cursor-pointer dark:border-gray-800 dark:bg-white/[0.03]"
+          onClick={() => navigate('/slots')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Slots</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                {stats?.totalSlots?.toLocaleString() || '0'}
+              </p>
+              <div className="mt-1 flex items-center">
+                <svg className="h-3 w-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="ml-1 text-xs text-orange-600 dark:text-orange-400">All time</span>
+              </div>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-500/20 ml-2 flex-shrink-0">
+              <svg className="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
@@ -582,6 +719,123 @@ export default function Home() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Recent Activity Tables */}
+      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Recent Doctors */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Doctors</h3>
+            <button 
+              className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+              onClick={() => navigate('/doctors-labs')}
+            >
+              View All
+            </button>
+          </div>
+          <div className="space-y-4">
+            {recentDoctors.length > 0 ? (
+              recentDoctors.map((doctor) => (
+                <div key={doctor._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-800">
+                  <div className="flex items-center">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center dark:bg-blue-500/20">
+                      {doctor.profileImage ? (
+                        <img className="h-10 w-10 rounded-full" src={doctor.profileImage} alt={doctor.name} />
+                      ) : (
+                        <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {typeof doctor.specialty === 'object' && doctor.specialty?.name 
+                          ? doctor.specialty.name 
+                          : typeof doctor.specialty === 'string' ? doctor.specialty : 'N/A'} • {doctor.email || doctor.mobileNo}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                      doctor.isActive 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                        : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                    }`}>
+                      {doctor.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No recent doctors</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Slots */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Slots</h3>
+            <button 
+              className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+              onClick={() => navigate('/slots')}
+            >
+              View All
+            </button>
+          </div>
+          <div className="space-y-4">
+            {recentSlots.length > 0 ? (
+              recentSlots.map((slot) => (
+                <div key={slot._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-800">
+                  <div className="flex items-center">
+                    <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center dark:bg-teal-500/20">
+                      <svg className="h-5 w-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(slot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {typeof slot.doctorId === 'object' && slot.doctorId?.name 
+                          ? (slot.doctorId.name.startsWith('Dr.') ? slot.doctorId.name : `Dr. ${slot.doctorId.name}`)
+                          : 'N/A'} • {new Date(slot.startTime).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                      slot.status === 'available'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                        : slot.status === 'booked'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
+                        : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                    }`}>
+                      {slot.status.charAt(0).toUpperCase() + slot.status.slice(1)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No recent slots</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

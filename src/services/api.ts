@@ -179,6 +179,7 @@ export interface DashboardStats {
   monthlyRevenue: number;
   totalBookings: number;
   totalCategories: number;
+  totalSlots: number;
   recentBookings: Booking[];
 }
 
