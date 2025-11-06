@@ -361,7 +361,23 @@ export default function BookingHistory() {
                             <div className="flex items-center">
                               <div className="h-8 w-8 flex-shrink-0">
                                 {patient?.profileImage ? (
-                                  <img className="h-8 w-8 rounded-full" src={patient.profileImage} alt="Patient" />
+                                  <>
+                                    <img 
+                                      className="h-8 w-8 rounded-full" 
+                                      src={patient.profileImage} 
+                                      alt="Patient"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                        if (fallback) fallback.style.display = 'flex';
+                                      }}
+                                    />
+                                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center hidden">
+                                      <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                      </svg>
+                                    </div>
+                                  </>
                                 ) : (
                                   <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
                                     <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -499,7 +515,23 @@ export default function BookingHistory() {
                   {typeof selectedBooking.patientId === 'object' && selectedBooking.patientId !== null ? (
                     <>
                       {selectedBooking.patientId.profileImage ? (
-                        <img className="h-16 w-16 rounded-full" src={selectedBooking.patientId.profileImage} alt="Patient" />
+                        <>
+                          <img 
+                            className="h-16 w-16 rounded-full" 
+                            src={selectedBooking.patientId.profileImage} 
+                            alt="Patient"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'flex';
+                            }}
+                          />
+                          <div className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hidden">
+                            <svg className="h-8 w-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                        </>
                       ) : (
                         <div className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                           <svg className="h-8 w-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

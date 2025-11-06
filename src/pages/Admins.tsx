@@ -272,7 +272,23 @@ export default function Admins() {
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
                               {admin.profileImage ? (
-                                <img className="h-10 w-10 rounded-full" src={admin.profileImage} alt="Admin" />
+                                <>
+                                  <img 
+                                    className="h-10 w-10 rounded-full" 
+                                    src={admin.profileImage} 
+                                    alt="Admin"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                  />
+                                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center hidden">
+                                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                  </div>
+                                </>
                               ) : (
                                 <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                                   <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
