@@ -9,6 +9,9 @@ import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import swal from '../utils/swalHelper';
 
+// Logo import - using public asset path
+const primeLogo = '/images/logo/prime-logo.png';
+
 type NavItem = {
   name: string;
   icon: React.ReactNode;
@@ -320,35 +323,23 @@ const AppSidebar: React.FC = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`py-8 flex ${
+        className={`py-8 flex items-center gap-3 ${
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link to="/">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <img
-                className="dark:hidden"
-                src="/images/logo/Prime Health.png"
-                alt="Logo"
-                width={250}
-                height={60}
-              />
-              <img
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-            </>
-          ) : (
-            <img
-              src="/images/logo/PrimeHealth.jpg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
+        <Link to="/" className="flex items-center gap-3">
+          <img
+            src={primeLogo}
+            alt="Prime Health Logo"
+            className="h-10 w-10 rounded-full object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          {(isExpanded || isHovered || isMobileOpen) && (
+            <span className="text-xl font-bold text-gray-900 dark:text-white">
+              PrimeHealth
+            </span>
           )}
         </Link>
       </div>
