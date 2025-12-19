@@ -496,8 +496,8 @@ export default function BookingHistory() {
             className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Fixed Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            {/* Sticky Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Booking Details</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -752,8 +752,8 @@ export default function BookingHistory() {
               </div>
             </div>
 
-            {/* Fixed Footer */}
-            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            {/* Sticky Footer */}
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"

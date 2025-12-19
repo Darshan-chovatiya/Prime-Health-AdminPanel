@@ -304,8 +304,9 @@ export default function Patients() {
   const renderModal = (isCreate: boolean) => {
     return (
       <div className="fixed inset-0 bg-[#1018285e] bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-3xl m-4 max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl m-4 max-h-[90vh] flex flex-col">
+          {/* Sticky Header */}
+          <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
                 {isCreate ? 'Add New Patient' : 'Update Patient'}
@@ -320,7 +321,10 @@ export default function Patients() {
               </button>
             </div>
           </div>
-          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+          
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <form id="patient-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Info */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Basic Information</h3>
@@ -606,9 +610,12 @@ export default function Patients() {
                 placeholder="Enter image URL"
               />
             </div>
-
-            {/* Form Actions */}
-            <div className="flex justify-end gap-3 pt-4">
+            </form>
+          </div>
+          
+          {/* Sticky Footer */}
+          <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 px-6 pt-4 pb-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+            <div className="flex justify-end gap-3">
               <button 
                 type="button" 
                 onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} 
@@ -618,12 +625,13 @@ export default function Patients() {
               </button>
               <button 
                 type="submit" 
+                form="patient-form"
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
               >
                 {isCreate ? 'Create Patient' : 'Update Patient'}
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     );

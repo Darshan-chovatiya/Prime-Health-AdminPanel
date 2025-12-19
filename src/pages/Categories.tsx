@@ -383,8 +383,8 @@ export default function Categories() {
       {viewingCategory && (
         <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
-            {/* Fixed Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            {/* Sticky Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Category Details</h3>
               <button
                 onClick={() => setViewingCategory(null)}
@@ -486,8 +486,8 @@ export default function Categories() {
               </div>
             </div>
 
-            {/* Fixed Footer */}
-            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            {/* Sticky Footer */}
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
               <button
                 onClick={() => {
                   setViewingCategory(null);
