@@ -6,6 +6,29 @@ import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
 
+// Helper function to get image URL
+const getImageUrl = (imagePath: string | undefined | null): string => {
+  if (!imagePath) return '';
+  
+  // If it's a base64 string, return as is
+  if (imagePath.startsWith('data:image/')) {
+    return imagePath;
+  }
+  
+  // If it's already a full URL (http/https), return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // If it's a relative path (starts with uploads/), prepend the base URL
+  // Use getBaseUrl from apiService to get the base URL
+  const baseUrl = apiService.getBaseUrl();
+  
+  // Ensure the path starts with / for proper URL construction
+  const normalizedPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+  return `${baseUrl}${normalizedPath}`;
+};
+
 export default function DoctorsLabs() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [stats, setStats] = useState<any>(null);
@@ -361,7 +384,7 @@ export default function DoctorsLabs() {
                                 <>
                                   <img
                                     className="h-10 w-10 rounded-full"
-                                    src={doctor.profileImage}
+                                    src={getImageUrl(doctor.profileImage)}
                                     alt="Doctor"
                                     onError={(e) => {
                                       e.currentTarget.style.display = 'none';

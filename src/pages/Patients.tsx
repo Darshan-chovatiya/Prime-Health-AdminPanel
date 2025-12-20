@@ -21,11 +21,8 @@ const getImageUrl = (imagePath: string | undefined | null): string => {
   }
   
   // If it's a relative path (starts with uploads/), prepend the base URL
-  // Extract base URL from API_BASE_URL (remove /api/admin)
-  // Match the API_BASE_URL from api.ts
-  const apiBaseUrl = 'http://localhost:3300/api/admin';
-  // const apiBaseUrl = 'https://primehealth.itfuturz.in/api/admin'; // For production
-  const baseUrl = apiBaseUrl.replace('/api/admin', '');
+  // Use getBaseUrl from apiService to get the base URL
+  const baseUrl = apiService.getBaseUrl();
   
   // Ensure the path starts with / for proper URL construction
   const normalizedPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;

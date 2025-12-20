@@ -1,6 +1,6 @@
-const API_BASE_URL = 'http://localhost:3300/api/admin';
-// const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
-// const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
+export const API_BASE_URL = 'http://localhost:3300/api/admin';
+// export const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
+// export const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
 
 // Types
 export interface ApiResponse<T = any> {
@@ -189,6 +189,11 @@ class ApiService {
 
   constructor() {
     this.token = localStorage.getItem('authToken');
+  }
+
+  // Get base URL (without /api/admin) for image URLs
+  getBaseUrl(): string {
+    return API_BASE_URL.replace('/api/admin', '');
   }
 
   private async request<T>(
@@ -493,16 +498,60 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
     });
   }
 
-  async createDoctor(doctorData: Partial<Doctor>): Promise<ApiResponse<{ doctor: Doctor }>> {
-    return this.request('/doctors/create', {
-      body: JSON.stringify(doctorData),
-    });
+  async createDoctor(doctorData: FormData | Partial<Doctor>): Promise<ApiResponse<{ doctor: Doctor }>> {
+    // Check if it's FormData (file upload) or regular object
+    if (doctorData instanceof FormData) {
+      const response = await fetch(`${API_BASE_URL}/doctors/create`, {
+        method: 'POST',
+        headers: {
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+          // Don't set Content-Type for FormData, browser will set it with boundary
+        },
+        body: doctorData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        // Handle validation errors
+        if (data.errors && Array.isArray(data.errors)) {
+          const errorMessages = data.errors.map((err: any) => err.message).join(', ');
+          throw new Error(errorMessages);
+        }
+        throw new Error(data.message || 'Request failed');
+      }
+      return data;
+    } else {
+      return this.request('/doctors/create', {
+        body: JSON.stringify(doctorData),
+      });
+    }
   }
 
-  async updateDoctor(doctorData: Partial<Doctor> & { id: string }): Promise<ApiResponse<{ doctor: Doctor }>> {
-    return this.request('/doctors/update', {
-      body: JSON.stringify(doctorData),
-    });
+  async updateDoctor(doctorData: FormData | Partial<Doctor>): Promise<ApiResponse<{ doctor: Doctor }>> {
+    // Check if it's FormData (file upload) or regular object
+    if (doctorData instanceof FormData) {
+      const response = await fetch(`${API_BASE_URL}/doctors/update`, {
+        method: 'POST',
+        headers: {
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+          // Don't set Content-Type for FormData, browser will set it with boundary
+        },
+        body: doctorData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        // Handle validation errors
+        if (data.errors && Array.isArray(data.errors)) {
+          const errorMessages = data.errors.map((err: any) => err.message).join(', ');
+          throw new Error(errorMessages);
+        }
+        throw new Error(data.message || 'Request failed');
+      }
+      return data;
+    } else {
+      return this.request('/doctors/update', {
+        body: JSON.stringify(doctorData),
+      });
+    }
   }
 
   async deleteDoctor(id: string): Promise<ApiResponse> {

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Doctor, apiService, Service, Category } from "../../services/api";
+import swal from '../../utils/swalHelper';
 
 interface DoctorModalProps {
   doctor?: Doctor;
@@ -7,6 +8,29 @@ interface DoctorModalProps {
   onSubmit: (doctorData: any) => void;
   title: string;
 }
+
+// Helper function to get image URL
+const getImageUrl = (imagePath: string | undefined | null): string => {
+  if (!imagePath) return '';
+  
+  // If it's a base64 string, return as is
+  if (imagePath.startsWith('data:image/')) {
+    return imagePath;
+  }
+  
+  // If it's already a full URL (http/https), return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // If it's a relative path (starts with uploads/), prepend the base URL
+  // Use getBaseUrl from apiService to get the base URL
+  const baseUrl = apiService.getBaseUrl();
+  
+  // Ensure the path starts with / for proper URL construction
+  const normalizedPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+  return `${baseUrl}${normalizedPath}`;
+};
 
 export default function DoctorModal({
   doctor,
@@ -27,11 +51,27 @@ export default function DoctorModal({
       followUpFee: 0,
     },
     isActive: true,
+    profileImage: "",
   });
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [servicesError, setServicesError] = useState<string | null>(null);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Validation errors state
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    mobileNo?: string;
+    license?: string;
+    specialty?: string;
+    services?: string;
+    consultationFee?: string;
+    followUpFee?: string;
+  }>({});
 
   // 🔹 Fetch all services only once
   useEffect(() => {
@@ -104,34 +144,238 @@ export default function DoctorModal({
           followUpFee: doctor.pricing?.followUpFee ?? 0,
         },
         isActive: doctor.isActive,
+        profileImage: doctor.profileImage || "",
       });
+      setProfileImagePreview("");
+      setProfileImageFile(null);
+      setErrors({});
+    } else {
+      // Reset form when creating new doctor
+      setFormData({
+        name: "",
+        email: "",
+        mobileNo: "",
+        license: "",
+        specialty: "",
+        bio: "",
+        services: "",
+        pricing: {
+          consultationFee: 0,
+          followUpFee: 0,
+        },
+        isActive: true,
+        profileImage: "",
+      });
+      setProfileImagePreview("");
+      setProfileImageFile(null);
+      setErrors({});
     }
   }, [doctor]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        swal.error('Invalid File Type', 'Please select an image file');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        swal.error('File Too Large', 'Image size should be less than 5MB');
+        return;
+      }
+
+      setProfileImageFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Validate individual field
+  const validateField = (name: string, value: any): string | null => {
+    switch (name) {
+      case 'name':
+        if (!value || value.trim().length < 2) {
+          return 'Name must be at least 2 characters';
+        }
+        if (value.trim().length > 50) {
+          return 'Name must be less than 50 characters';
+        }
+        return null;
+      
+      case 'email':
+        if (!value || !value.trim()) {
+          return 'Email is required';
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value.trim())) {
+          return 'Please enter a valid email address';
+        }
+        return null;
+      
+      case 'mobileNo':
+        if (!value || value.trim().length === 0) {
+          return 'Mobile number is required';
+        }
+        if (!/^[0-9]{10}$/.test(value.trim())) {
+          return 'Mobile number must be exactly 10 digits';
+        }
+        return null;
+      
+      case 'license':
+        if (!value || value.trim().length < 5) {
+          return 'License number must be at least 5 characters';
+        }
+        if (value.trim().length > 20) {
+          return 'License number must be less than 20 characters';
+        }
+        return null;
+      
+      case 'specialty':
+        if (!value || value.trim().length === 0) {
+          return 'Specialty is required';
+        }
+        return null;
+      
+      case 'services':
+        if (!value || value.trim().length === 0) {
+          return 'Service is required';
+        }
+        return null;
+      
+      case 'consultationFee':
+        if (value === '' || value === null || value === undefined) {
+          return 'Consultation fee is required';
+        }
+        const fee = parseFloat(value);
+        if (isNaN(fee) || fee < 0) {
+          return 'Consultation fee must be a number greater than or equal to 0';
+        }
+        return null;
+      
+      case 'followUpFee':
+        if (value !== '' && value !== null && value !== undefined) {
+          const followFee = parseFloat(value);
+          if (isNaN(followFee) || followFee < 0) {
+            return 'Follow-up fee must be a number greater than or equal to 0';
+          }
+        }
+        return null;
+      
+      default:
+        return null;
+    }
+  };
+
+  // Validate entire form
+  const isFormValid = (): boolean => {
+    const nameError = validateField('name', formData.name);
+    const emailError = validateField('email', formData.email);
+    const mobileError = validateField('mobileNo', formData.mobileNo);
+    const licenseError = validateField('license', formData.license);
+    const specialtyError = validateField('specialty', formData.specialty);
+    const servicesError = validateField('services', formData.services);
+    const consultationFeeError = validateField('consultationFee', formData.pricing.consultationFee);
+    
+    return !nameError && !emailError && !mobileError && !licenseError && !specialtyError && !servicesError && !consultationFeeError;
+  };
+
+  // Handle input change with validation
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    // Update form data
+    if (name === 'consultationFee' || name === 'followUpFee') {
+      setFormData({
+        ...formData,
+        pricing: {
+          ...formData.pricing,
+          [name]: value === '' ? 0 : parseFloat(value) || 0,
+        },
+      });
+      // Validate the field
+      const error = validateField(name, value === '' ? 0 : parseFloat(value) || 0);
+      setErrors({ ...errors, [name]: error || undefined });
+    } else {
+      setFormData({ ...formData, [name]: value });
+      // Validate the field
+      const error = validateField(name, value);
+      setErrors({ ...errors, [name]: error || undefined });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !formData.name ||
-      !formData.mobileNo ||
-      !formData.license ||
-      !formData.services ||
-      !formData.specialty
-    ) {
-      alert(
-        "Please fill in all required fields, including service and specialty"
-      );
+    // Validate all fields
+    const validationErrors: any = {};
+    validationErrors.name = validateField('name', formData.name);
+    validationErrors.email = validateField('email', formData.email);
+    validationErrors.mobileNo = validateField('mobileNo', formData.mobileNo);
+    validationErrors.license = validateField('license', formData.license);
+    validationErrors.specialty = validateField('specialty', formData.specialty);
+    validationErrors.services = validateField('services', formData.services);
+    validationErrors.consultationFee = validateField('consultationFee', formData.pricing.consultationFee);
+    validationErrors.followUpFee = validateField('followUpFee', formData.pricing.followUpFee);
+
+    // Remove undefined values
+    Object.keys(validationErrors).forEach(key => {
+      if (!validationErrors[key]) delete validationErrors[key];
+    });
+
+    setErrors(validationErrors);
+
+    // Check if form is valid
+    if (Object.keys(validationErrors).length > 0) {
+      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
-    const submitData = doctor ? { id: doctor._id, ...formData } : formData;
+    // Create FormData for file upload
+    const formDataToSend = new FormData();
+    
+    // Add all form fields
+    formDataToSend.append('name', formData.name);
+    if (formData.email) {
+      formDataToSend.append('email', formData.email);
+    }
+    formDataToSend.append('mobileNo', formData.mobileNo);
+    formDataToSend.append('license', formData.license);
+    formDataToSend.append('specialty', formData.specialty);
+    formDataToSend.append('services', formData.services);
+    if (formData.bio) {
+      formDataToSend.append('bio', formData.bio);
+    }
+    formDataToSend.append('pricing', JSON.stringify(formData.pricing));
+    formDataToSend.append('isActive', formData.isActive.toString());
+    
+    // Add profile image file if selected
+    if (profileImageFile) {
+      formDataToSend.append('profileImage', profileImageFile);
+    }
+    
+    // Add ID if updating
+    if (doctor) {
+      formDataToSend.append('id', doctor._id);
+    }
 
-    console.log("Submitting doctor data:", submitData);
+    console.log("Submitting doctor data:", formDataToSend);
     try {
-      await onSubmit(submitData);
+      await onSubmit(formDataToSend);
     } catch (error: any) {
       console.error("Error submitting doctor:", error);
-      alert(error.message || "Failed to submit doctor. Please try again.");
+      // Show validation errors properly
+      const errorMessage = error.message || "Failed to submit doctor. Please try again.";
+      swal.error("Error", errorMessage);
+      // Re-throw to let parent handle if needed
+      throw error;
     }
   };
 
@@ -171,73 +415,92 @@ export default function DoctorModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Name *
+                Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
+                name="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border ${
+                  errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
                 required
               />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email
+                Email <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
+                name="email"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border ${
+                  errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
+                required
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Mobile Number *
+                Mobile Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
+                name="mobileNo"
                 value={formData.mobileNo}
                 onChange={(e) => {
                   const value = e.target.value;
                   // Only allow numbers
-                  if (/^\d*$/.test(value)) {
-                    setFormData({ ...formData, mobileNo: value });
+                  if (/^\d*$/.test(value) && value.length <= 10) {
+                    handleInputChange(e);
                   }
                 }}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                className={`w-full rounded-lg border ${
+                  errors.mobileNo ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
                 placeholder="Enter mobile number (numbers only)"
                 maxLength={10}
                 required
               />
+              {errors.mobileNo && (
+                <p className="mt-1 text-sm text-red-500">{errors.mobileNo}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                License Number *
+                License Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
+                name="license"
                 value={formData.license}
-                onChange={(e) =>
-                  setFormData({ ...formData, license: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border ${
+                  errors.license ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
                 required
               />
+              {errors.license && (
+                <p className="mt-1 text-sm text-red-500">{errors.license}</p>
+              )}
             </div>
 
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Service *
+                  Service <span className="text-red-500">*</span>
                 </label>
                 {servicesError ? (
                   <p className="text-red-500 text-sm">{servicesError}</p>
@@ -246,31 +509,42 @@ export default function DoctorModal({
                     No services available.
                   </p>
                 ) : (
-                  <select
-                    value={formData.services}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        services: e.target.value,
-                        specialty: "",
-                      })
-                    }
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                    required
-                  >
-                    <option value="">Select a Service</option>
-                    {services.map((service) => (
-                      <option key={service._id} value={service._id}>
-                        {service.name}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      name="services"
+                      value={formData.services}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        // Reset specialty when service changes
+                        setFormData({
+                          ...formData,
+                          services: e.target.value,
+                          specialty: "",
+                        });
+                        setErrors({ ...errors, specialty: undefined });
+                      }}
+                      className={`w-full rounded-lg border ${
+                        errors.services ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
+                      required
+                    >
+                      <option value="">Select a Service</option>
+                      {services.map((service) => (
+                        <option key={service._id} value={service._id}>
+                          {service.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.services && (
+                      <p className="mt-1 text-sm text-red-500">{errors.services}</p>
+                    )}
+                  </>
                 )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Specialty *
+                  Specialty <span className="text-red-500">*</span>
                 </label>
                 {categoriesError ? (
                   <p className="text-red-500 text-sm">{categoriesError}</p>
@@ -281,47 +555,51 @@ export default function DoctorModal({
                       : "Select a service first."}
                   </p>
                 ) : (
-                  <select
-                    value={formData.specialty}
-                    onChange={(e) =>
-                      setFormData({ ...formData, specialty: e.target.value })
-                    }
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                    required
-                    disabled={!formData.services} // Disable until a service is selected
-                  >
-                    <option value="">Select Specialty</option>
-                    {categories.map((category) => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      name="specialty"
+                      value={formData.specialty}
+                      onChange={handleInputChange}
+                      className={`w-full rounded-lg border ${
+                        errors.specialty ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
+                      required
+                      disabled={!formData.services} // Disable until a service is selected
+                    >
+                      <option value="">Select Specialty</option>
+                      {categories.map((category) => (
+                        <option key={category._id} value={category._id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.specialty && (
+                      <p className="mt-1 text-sm text-red-500">{errors.specialty}</p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Consultation Fee *
+                Consultation Fee <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
+                name="consultationFee"
                 value={formData.pricing.consultationFee}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    pricing: {
-                      ...formData.pricing,
-                      consultationFee: parseFloat(e.target.value) || 0,
-                    },
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border ${
+                  errors.consultationFee ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
                 min="0"
                 step="0.01"
                 required
               />
+              {errors.consultationFee && (
+                <p className="mt-1 text-sm text-red-500">{errors.consultationFee}</p>
+              )}
             </div>
 
             <div>
@@ -330,20 +608,18 @@ export default function DoctorModal({
               </label>
               <input
                 type="number"
+                name="followUpFee"
                 value={formData.pricing.followUpFee}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    pricing: {
-                      ...formData.pricing,
-                      followUpFee: parseFloat(e.target.value) || 0,
-                    },
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border ${
+                  errors.followUpFee ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
                 min="0"
                 step="0.01"
               />
+              {errors.followUpFee && (
+                <p className="mt-1 text-sm text-red-500">{errors.followUpFee}</p>
+              )}
             </div>
           </div>
 
@@ -360,6 +636,58 @@ export default function DoctorModal({
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
               placeholder="Brief description about the doctor..."
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Profile Image
+            </label>
+            <div className="mb-3">
+              {profileImagePreview || formData.profileImage ? (
+                <div className="relative inline-block">
+                  <img 
+                    src={profileImagePreview || getImageUrl(formData.profileImage)} 
+                    alt="Profile preview" 
+                    className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                  <div className="w-32 h-32 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 flex items-center justify-center hidden">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                id="profileImageInput"
+              />
+              <label
+                htmlFor="profileImageInput"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                {profileImagePreview || formData.profileImage ? 'Change Image' : 'Upload Image'}
+              </label>
+            </div>
           </div>
 
           <div className="flex items-center">
@@ -395,7 +723,12 @@ export default function DoctorModal({
             <button
               type="submit"
               form="doctor-form"
-              className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              disabled={!isFormValid()}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                isFormValid()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+              }`}
             >
               {doctor ? "Update" : "Create"}
             </button>
