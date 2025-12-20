@@ -300,9 +300,19 @@ export default function Patients() {
       return 'Name is required and must be between 2 and 50 characters';
     }
 
-    // Email validation: optional but must be valid if provided
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      return 'Please enter a valid email address';
+    // Email validation: required for create, optional for update
+    if (showCreateModal) {
+      if (!formData.email || !formData.email.trim()) {
+        return 'Email is required';
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        return 'Please enter a valid email address';
+      }
+    } else {
+      // For update, email is optional but must be valid if provided
+      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        return 'Please enter a valid email address';
+      }
     }
 
     // Mobile number validation: required, exactly 10 digits
@@ -387,6 +397,30 @@ export default function Patients() {
     return null; // No validation errors
   };
 
+  // Check if all required fields are filled (for button disable state)
+  const isFormValid = (): boolean => {
+    if (showCreateModal) {
+      // For create: check all required fields including email
+      return !!(
+        formData.name?.trim() &&
+        formData.name.trim().length >= 2 &&
+        formData.email?.trim() &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) &&
+        formData.mobileNo?.trim() &&
+        /^[0-9]{10}$/.test(formData.mobileNo) &&
+        formData.dateOfBirth &&
+        formData.gender &&
+        ['male', 'female', 'other'].includes(formData.gender)
+      );
+    } else {
+      // For update: name is required, others can be optional
+      return !!(
+        formData.name?.trim() &&
+        formData.name.trim().length >= 2
+      );
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -426,7 +460,20 @@ export default function Patients() {
       if (formData.bloodGroup) {
         formDataToSend.append('bloodGroup', formData.bloodGroup);
       }
-      formDataToSend.append('address', JSON.stringify(formData.address));
+      // Clean up address - remove empty fields before sending
+      const cleanedAddress: any = {};
+      if (formData.address.street?.trim()) cleanedAddress.street = formData.address.street.trim();
+      if (formData.address.city?.trim()) cleanedAddress.city = formData.address.city.trim();
+      if (formData.address.state?.trim()) cleanedAddress.state = formData.address.state.trim();
+      if (formData.address.zipCode?.trim()) cleanedAddress.zipCode = formData.address.zipCode.trim();
+      if (formData.address.country?.trim()) cleanedAddress.country = formData.address.country.trim();
+      
+      // Only send address if it has at least one field, otherwise send null
+      if (Object.keys(cleanedAddress).length > 0) {
+        formDataToSend.append('address', JSON.stringify(cleanedAddress));
+      } else {
+        formDataToSend.append('address', JSON.stringify(null));
+      }
       
       // Emergency contact is optional during update - only send if it has values
       const hasEmergencyContact = formData.emergencyContact.name || 
@@ -458,7 +505,9 @@ export default function Patients() {
       } else if (showEditModal && selectedPatient?._id) {
         response = await apiService.updatePatient(formDataToSend);
       }
-      if (response.status === 200) {
+      
+      // Check if response indicates success (status 200 and data !== 0)
+      if (response.status === 200 && response.data !== 0) {
         swal.success('Success', showCreateModal ? 'Patient created successfully' : 'Patient updated successfully');
         setShowCreateModal(false);
         setShowEditModal(false);
@@ -467,7 +516,9 @@ export default function Patients() {
         fetchPatients();
         fetchPatientStats();
       } else {
-        swal.error('Error', response.message);
+        // Show backend error message (when status is 200 but data is 0, it's an error)
+        const errorMessage = response.message || 'Failed to save patient';
+        swal.error('Error', errorMessage);
       }
     } catch (error: any) {
       swal.error('Error', error.message || 'Failed to save patient');
@@ -524,7 +575,9 @@ export default function Patients() {
               <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">Basic Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Name <span className="text-red-500">*</span>
+                  </label>
                   <input 
                     name="name" 
                     value={formData.name} 
@@ -537,6 +590,7 @@ export default function Patients() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email
+                    {showCreateModal && <span className="text-red-500">*</span>}
                     {showEditModal && <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">(Read-only)</span>}
                   </label>
                   <input 
@@ -545,6 +599,7 @@ export default function Patients() {
                     value={formData.email} 
                     onChange={handleInputChange} 
                     readOnly={showEditModal}
+                    required={showCreateModal}
                     className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 ${
                       showEditModal 
                         ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-75' 
@@ -555,7 +610,7 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Mobile No *
+                    Mobile No <span className="text-red-500">*</span>
                     {showEditModal && <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">(Read-only)</span>}
                   </label>
                   <input 
@@ -583,7 +638,9 @@ export default function Patients() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date of Birth *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
                     <input 
                       name="dateOfBirth" 
@@ -617,7 +674,9 @@ export default function Patients() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
                   <select 
                     name="gender" 
                     value={formData.gender} 
@@ -946,9 +1005,14 @@ export default function Patients() {
                 Cancel
               </button>
               <button 
-                type="submit" 
+                type="submit"
                 form="patient-form"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto"
+                disabled={!isFormValid()}
+                className={`px-4 py-2 rounded-lg w-full sm:w-auto ${
+                  isFormValid()
+                    ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer'
+                    : 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50'
+                }`}
               >
                 {isCreate ? 'Create Patient' : 'Update Patient'}
               </button>
