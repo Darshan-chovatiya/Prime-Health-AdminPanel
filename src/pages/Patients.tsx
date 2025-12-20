@@ -6,6 +6,32 @@ import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
 import { useDebounce } from '../hooks';
 
+// Helper function to get image URL
+const getImageUrl = (imagePath: string | undefined | null): string => {
+  if (!imagePath) return '';
+  
+  // If it's a base64 string, return as is
+  if (imagePath.startsWith('data:image/')) {
+    return imagePath;
+  }
+  
+  // If it's already a full URL (http/https), return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // If it's a relative path (starts with uploads/), prepend the base URL
+  // Extract base URL from API_BASE_URL (remove /api/admin)
+  // Match the API_BASE_URL from api.ts
+  const apiBaseUrl = 'http://localhost:3300/api/admin';
+  // const apiBaseUrl = 'https://primehealth.itfuturz.in/api/admin'; // For production
+  const baseUrl = apiBaseUrl.replace('/api/admin', '');
+  
+  // Ensure the path starts with / for proper URL construction
+  const normalizedPath = imagePath.startsWith('/') ? imagePath : '/' + imagePath;
+  return `${baseUrl}${normalizedPath}`;
+};
+
 export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [stats, setStats] = useState<any>(null);
@@ -49,6 +75,8 @@ export default function Patients() {
     bloodGroup: '',
     profileImage: '',
   });
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('');
   const [allergyInput, setAllergyInput] = useState('');
   const [newMedical, setNewMedical] = useState({
     condition: '',
@@ -144,6 +172,8 @@ export default function Patients() {
       bloodGroup: '',
       profileImage: '',
     });
+    setProfileImageFile(null);
+    setProfileImagePreview('');
     setAllergyInput('');
     setNewMedical({
       condition: '',
@@ -179,6 +209,8 @@ export default function Patients() {
           bloodGroup: patient.bloodGroup || '',
           profileImage: patient.profileImage || '',
         });
+        setProfileImageFile(null);
+        setProfileImagePreview(patient.profileImage ? getImageUrl(patient.profileImage) : '');
         setSelectedPatient(patient);
         setShowEditModal(true);
       } else {
@@ -262,19 +294,176 @@ export default function Patients() {
     setFormData({ ...formData, medicalHistory: newHistory });
   };
 
+  const validateForm = (): string | null => {
+    // Name validation: required, min 2, max 50
+    if (!formData.name || formData.name.trim().length < 2 || formData.name.trim().length > 50) {
+      return 'Name is required and must be between 2 and 50 characters';
+    }
+
+    // Email validation: optional but must be valid if provided
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      return 'Please enter a valid email address';
+    }
+
+    // Mobile number validation: required, exactly 10 digits
+    if (!formData.mobileNo) {
+      return 'Mobile number is required';
+    }
+    if (!/^[0-9]{10}$/.test(formData.mobileNo)) {
+      return 'Mobile number must be exactly 10 digits';
+    }
+
+    // Date of birth validation: required, must be a valid date, not in the future
+    if (!formData.dateOfBirth) {
+      return 'Date of birth is required';
+    }
+    const dob = new Date(formData.dateOfBirth);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (isNaN(dob.getTime())) {
+      return 'Please enter a valid date of birth';
+    }
+    if (dob > today) {
+      return 'Date of birth cannot be in the future';
+    }
+
+    // Gender validation: required, must be one of the valid values
+    if (!formData.gender || !['male', 'female', 'other'].includes(formData.gender)) {
+      return 'Please select a valid gender';
+    }
+
+    // Blood group validation: optional but must be valid if provided
+    const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    if (formData.bloodGroup && !validBloodGroups.includes(formData.bloodGroup)) {
+      return 'Please select a valid blood group';
+    }
+
+    // Emergency contact validation: optional during update, but if any field is provided, all are required
+    // Only validate if we're creating a new patient OR if any emergency contact field is filled
+    if (showCreateModal || formData.emergencyContact.name || formData.emergencyContact.relationship || formData.emergencyContact.mobileNo) {
+      // If creating, emergency contact is optional
+      // If updating and any field is provided, all fields must be provided
+      const hasAnyField = formData.emergencyContact.name || formData.emergencyContact.relationship || formData.emergencyContact.mobileNo;
+      const hasAllFields = formData.emergencyContact.name && formData.emergencyContact.relationship && formData.emergencyContact.mobileNo;
+      
+      if (hasAnyField && !hasAllFields) {
+        return 'If providing emergency contact, all fields (name, relationship, mobile number) are required';
+      }
+      
+      if (hasAllFields) {
+        if (formData.emergencyContact.name.trim().length < 2) {
+          return 'Emergency contact name must be at least 2 characters';
+        }
+        if (formData.emergencyContact.relationship.trim().length < 2) {
+          return 'Emergency contact relationship must be at least 2 characters';
+        }
+        if (!/^[0-9]{10}$/.test(formData.emergencyContact.mobileNo)) {
+          return 'Emergency contact mobile number must be exactly 10 digits';
+        }
+      }
+    }
+
+    // Medical history validation: if provided, all fields are required
+    for (let i = 0; i < formData.medicalHistory.length; i++) {
+      const history = formData.medicalHistory[i];
+      if (!history.condition || !history.condition.trim()) {
+        return `Medical history entry ${i + 1}: Condition is required`;
+      }
+      if (!history.diagnosis || !history.diagnosis.trim()) {
+        return `Medical history entry ${i + 1}: Diagnosis is required`;
+      }
+      if (!history.treatment || !history.treatment.trim()) {
+        return `Medical history entry ${i + 1}: Treatment is required`;
+      }
+      if (!history.date) {
+        return `Medical history entry ${i + 1}: Date is required`;
+      }
+      const historyDate = new Date(history.date);
+      if (isNaN(historyDate.getTime())) {
+        return `Medical history entry ${i + 1}: Please enter a valid date`;
+      }
+    }
+
+    return null; // No validation errors
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    const validationError = validateForm();
+    if (validationError) {
+      swal.error('Validation Error', validationError);
+      return;
+    }
+
     try {
+      // Prepare FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Add all form fields to FormData
+      formDataToSend.append('name', formData.name.trim());
+      
+      // For update: only send email/mobile if they're being changed
+      // For create: always send email and mobileNo
+      if (showEditModal && selectedPatient?._id) {
+        // Only append email if it's different from existing (or if existing is empty)
+        if (formData.email.trim() !== (selectedPatient.email || '')) {
+          formDataToSend.append('email', formData.email.trim() || '');
+        }
+        // Only append mobileNo if it's different from existing
+        if (formData.mobileNo.trim() !== (selectedPatient.mobileNo || '')) {
+          formDataToSend.append('mobileNo', formData.mobileNo.trim());
+        }
+      } else {
+        // For create: always send email and mobileNo
+        formDataToSend.append('email', formData.email.trim() || '');
+        formDataToSend.append('mobileNo', formData.mobileNo.trim());
+      }
+      
+      formDataToSend.append('dateOfBirth', formData.dateOfBirth);
+      formDataToSend.append('gender', formData.gender);
+      if (formData.bloodGroup) {
+        formDataToSend.append('bloodGroup', formData.bloodGroup);
+      }
+      formDataToSend.append('address', JSON.stringify(formData.address));
+      
+      // Emergency contact is optional during update - only send if it has values
+      const hasEmergencyContact = formData.emergencyContact.name || 
+                                   formData.emergencyContact.relationship || 
+                                   formData.emergencyContact.mobileNo;
+      if (hasEmergencyContact) {
+        formDataToSend.append('emergencyContact', JSON.stringify(formData.emergencyContact));
+      } else {
+        // Send empty object to allow clearing emergency contact
+        formDataToSend.append('emergencyContact', JSON.stringify({}));
+      }
+      
+      formDataToSend.append('allergies', JSON.stringify(formData.allergies));
+      formDataToSend.append('medicalHistory', JSON.stringify(formData.medicalHistory));
+      
+      // Add profile image file if selected
+      if (profileImageFile) {
+        formDataToSend.append('profileImage', profileImageFile);
+      }
+      
+      // Add id for update
+      if (showEditModal && selectedPatient?._id) {
+        formDataToSend.append('id', selectedPatient._id);
+      }
+      
       let response:any;
       if (showCreateModal) {
-        response = await apiService.createPatient(formData);
+        response = await apiService.createPatient(formDataToSend);
       } else if (showEditModal && selectedPatient?._id) {
-        response = await apiService.updatePatient({ ...formData, id: selectedPatient._id });
+        response = await apiService.updatePatient(formDataToSend);
       }
       if (response.status === 200) {
         swal.success('Success', showCreateModal ? 'Patient created successfully' : 'Patient updated successfully');
         setShowCreateModal(false);
         setShowEditModal(false);
+        setProfileImageFile(null);
+        setProfileImagePreview('');
         fetchPatients();
         fetchPatientStats();
       } else {
@@ -312,7 +501,12 @@ export default function Patients() {
                 {isCreate ? 'Add New Patient' : 'Update Patient'}
               </h2>
               <button 
-                onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} 
+                onClick={() => { 
+                  setShowCreateModal(false); 
+                  setShowEditModal(false);
+                  setProfileImageFile(null);
+                  setProfileImagePreview('');
+                }} 
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -341,31 +535,49 @@ export default function Patients() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email
+                    {showEditModal && <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">(Read-only)</span>}
+                  </label>
                   <input 
                     name="email" 
                     type="email" 
                     value={formData.email} 
                     onChange={handleInputChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    readOnly={showEditModal}
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 ${
+                      showEditModal 
+                        ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-75' 
+                        : ''
+                    }`}
                     placeholder="Enter email"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mobile No *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Mobile No *
+                    {showEditModal && <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">(Read-only)</span>}
+                  </label>
                   <input 
                     name="mobileNo" 
                     value={formData.mobileNo} 
                     onChange={(e) => {
-                      const value = e.target.value;
-                      // Only allow numbers
-                      if (/^\d*$/.test(value)) {
-                        handleInputChange(e);
+                      if (!showEditModal) {
+                        const value = e.target.value;
+                        // Only allow numbers
+                        if (/^\d*$/.test(value)) {
+                          handleInputChange(e);
+                        }
                       }
                     }} 
+                    readOnly={showEditModal}
                     required 
                     pattern="[0-9]{10}" 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 ${
+                      showEditModal 
+                        ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-75' 
+                        : ''
+                    }`}
                     placeholder="Enter 10-digit mobile number (numbers only)"
                     maxLength={10}
                   />
@@ -645,14 +857,75 @@ export default function Patients() {
 
             {/* Profile Image */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Image URL</label>
-              <input 
-                name="profileImage" 
-                value={formData.profileImage} 
-                onChange={handleInputChange} 
-                className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
-                placeholder="Enter image URL"
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Image</label>
+              <div className="mb-3">
+                {profileImagePreview || formData.profileImage ? (
+                  <div className="relative inline-block">
+                    <img 
+                      src={profileImagePreview || getImageUrl(formData.profileImage)} 
+                      alt="Profile preview" 
+                      className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-32 h-32 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 flex items-center justify-center hidden">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Upload Image File</label>
+                <input 
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Validate file size (max 5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        swal.error('File Too Large', 'Image size should be less than 5MB');
+                        e.target.value = ''; // Reset input
+                        return;
+                      }
+                      // Validate file type
+                      if (!file.type.startsWith('image/')) {
+                        swal.error('Invalid File Type', 'Please select an image file');
+                        e.target.value = ''; // Reset input
+                        return;
+                      }
+                      // Store file for upload
+                      setProfileImageFile(file);
+                      // Create preview URL
+                      const previewUrl = URL.createObjectURL(file);
+                      setProfileImagePreview(previewUrl);
+                    }
+                  }}
+                  className="w-full text-sm text-gray-500 dark:text-gray-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-green-50 file:text-green-700
+                    hover:file:bg-green-100
+                    dark:file:bg-green-900/20 dark:file:text-green-400
+                    dark:hover:file:bg-green-900/30
+                    file:cursor-pointer
+                    cursor-pointer
+                    border border-gray-300 dark:border-gray-600 rounded-lg
+                    dark:bg-gray-700"
+                />
+              </div>
             </div>
             </form>
           </div>
@@ -662,7 +935,12 @@ export default function Patients() {
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
               <button 
                 type="button" 
-                onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} 
+                onClick={() => { 
+                  setShowCreateModal(false); 
+                  setShowEditModal(false);
+                  setProfileImageFile(null);
+                  setProfileImagePreview('');
+                }} 
                 className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 w-full sm:w-auto"
               >
                 Cancel
@@ -1096,7 +1374,7 @@ export default function Patients() {
                                 <>
                                   <img 
                                     className="h-10 w-10 rounded-full" 
-                                    src={patient.profileImage} 
+                                    src={getImageUrl(patient.profileImage)} 
                                     alt="Patient"
                                     onError={(e) => {
                                       e.currentTarget.style.display = 'none';

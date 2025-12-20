@@ -333,16 +333,50 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
     });
   }
 
-  async createPatient(patientData: any): Promise<ApiResponse<{ patient: Patient }>> {
-    return this.request('/patients/create', {
-      body: JSON.stringify(patientData),
-    });
+  async createPatient(patientData: FormData | any): Promise<ApiResponse<{ patient: Patient }>> {
+    // Check if it's FormData (file upload) or regular object
+    if (patientData instanceof FormData) {
+      const response = await fetch(`${API_BASE_URL}/patients/create`, {
+        method: 'POST',
+        headers: {
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+          // Don't set Content-Type for FormData, browser will set it with boundary
+        },
+        body: patientData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Request failed');
+      }
+      return data;
+    } else {
+      return this.request('/patients/create', {
+        body: JSON.stringify(patientData),
+      });
+    }
   }
 
-  async updatePatient(patientData: any & { id: string }): Promise<ApiResponse<{ patient: Patient }>> {
-    return this.request('/patients/update', {
-      body: JSON.stringify(patientData),
-    });
+  async updatePatient(patientData: FormData | any): Promise<ApiResponse<{ patient: Patient }>> {
+    // Check if it's FormData (file upload) or regular object
+    if (patientData instanceof FormData) {
+      const response = await fetch(`${API_BASE_URL}/patients/update`, {
+        method: 'POST',
+        headers: {
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+          // Don't set Content-Type for FormData, browser will set it with boundary
+        },
+        body: patientData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Request failed');
+      }
+      return data;
+    } else {
+      return this.request('/patients/update', {
+        body: JSON.stringify(patientData),
+      });
+    }
   }
 
   async deletePatient(id: string): Promise<ApiResponse> {
