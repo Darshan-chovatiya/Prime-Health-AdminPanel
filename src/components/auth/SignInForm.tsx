@@ -84,13 +84,13 @@ export default function SignInForm() {
       <Link to="/" className="">
         <img
           width={200}
-          height={36}
-          src="/images/logo/Prime Health.png"
+          height={200}
+          src="/images/logo/prime-logo.png"
           alt="Prime Health Logo"
-          className="mx-auto"
+          className="mx-auto h-16 w-16 sm:h-20 sm:w-20 rounded-full object-contain"
         />
       </Link>
-      <h1 className="mb-2 text-2xl font-bold text-gray-800 dark:text-white text-center">
+      <h1 className="mb-2  mt-2 text-2xl font-bold text-gray-800 dark:text-white text-center">
         Welcome to Prime Health Admin
       </h1>
       <p className="mb-8 text-sm text-gray-500 dark:text-gray-400 text-center">

@@ -84,14 +84,9 @@ const AppHeader: React.FC = () => {
 
           <Link to="/" className="lg:hidden">
             <img
-              className="h-8 w-8 rounded-full dark:hidden"
-              src="./images/logo/logo.svg"
-              alt="Logo"
-            />
-            <img
-              className="h-8 w-8 rounded-full hidden dark:block"
-              src="./images/logo/logo-dark.svg"
-              alt="Logo"
+              className="h-8 w-8 rounded-full object-contain"
+              src="/images/logo/prime-logo.png"
+              alt="Prime Health Logo"
             />
           </Link>
 

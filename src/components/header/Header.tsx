@@ -79,14 +79,9 @@ const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
 
           <Link to="/" className="lg:hidden">
             <img
-              className="dark:hidden"
-              src="./images/logo/logo.svg"
-              alt="Logo"
-            />
-            <img
-              className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
-              alt="Logo"
+              className="h-8 w-8 rounded-full object-contain"
+              src="/images/logo/prime-logo.png"
+              alt="Prime Health Logo"
             />
           </Link>
 
