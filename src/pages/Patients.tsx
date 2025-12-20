@@ -372,15 +372,37 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date of Birth *</label>
-                  <input 
-                    name="dateOfBirth" 
-                    type="date" 
-                    value={formData.dateOfBirth} 
-                    onChange={handleInputChange} 
-                    required 
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
-                  />
+                  <div className="relative">
+                    <input 
+                      name="dateOfBirth" 
+                      type="date" 
+                      id="date-of-birth"
+                      value={formData.dateOfBirth} 
+                      onChange={handleInputChange} 
+                      required 
+                      max={new Date().toISOString().split('T')[0]}
+                      className="w-full border rounded-lg px-3 py-2 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 cursor-pointer" 
+                      style={{ paddingRight: '2.5rem' }}
+                      onFocus={(e) => {
+                        const input = e.currentTarget;
+                        if (input && 'showPicker' in input && typeof (input as any).showPicker === 'function') {
+                          try {
+                            (input as any).showPicker();
+                          } catch (err) {
+                            // showPicker might not be available or might fail, that's okay
+                          }
+                        }
+                      }}
+                    />
+                    <label 
+                      htmlFor="date-of-birth"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </label>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender *</label>
@@ -574,13 +596,35 @@ export default function Patients() {
                   placeholder="Treatment" 
                   className="border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
                 />
-                <input 
-                  name="date" 
-                  type="date" 
-                  value={newMedical.date} 
-                  onChange={handleNewMedicalChange} 
-                  className="border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
-                />
+                <div className="relative">
+                  <input 
+                    name="date" 
+                    type="date" 
+                    id="medical-history-date"
+                    value={newMedical.date} 
+                    onChange={handleNewMedicalChange} 
+                    className="border rounded-lg px-3 py-2 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 cursor-pointer" 
+                    style={{ paddingRight: '2.5rem' }}
+                    onFocus={(e) => {
+                      const input = e.currentTarget;
+                      if (input && 'showPicker' in input && typeof (input as any).showPicker === 'function') {
+                        try {
+                          (input as any).showPicker();
+                        } catch (err) {
+                          // showPicker might not be available or might fail, that's okay
+                        }
+                      }
+                    }}
+                  />
+                  <label 
+                    htmlFor="medical-history-date"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </label>
+                </div>
               </div>
               <button 
                 type="button" 
