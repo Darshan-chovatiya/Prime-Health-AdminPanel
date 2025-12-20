@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://localhost:3300/api/admin';
-const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
+const API_BASE_URL = 'http://localhost:3300/api/admin';
+// const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
 // const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
 
 // Types
@@ -232,6 +232,12 @@ class ApiService {
   const response = await this.request('/login', {
     body: JSON.stringify({ email, password }),
   }) as ApiResponse<{ token: string; admin: Admin }>; // ✅ assert type
+
+  // Check if login was successful - backend returns message "Invalid credentials." when login fails
+  if (!response.data || !response.data.token) {
+    const errorMessage = response.message || 'Invalid email or password. Please check your credentials and try again.';
+    throw new Error(errorMessage);
+  }
 
   if (response.data.token) {
     this.token = response.data.token;
