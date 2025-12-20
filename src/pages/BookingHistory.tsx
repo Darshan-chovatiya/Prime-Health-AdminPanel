@@ -176,6 +176,42 @@ export default function BookingHistory() {
     }
   };
 
+  const generateReport = async () => {
+    try {
+      // Get date range for the report (last 30 days by default)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+
+      // Use exportBookings endpoint which generates proper Excel files
+      const blob = await apiService.exportBookings({
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
+      });
+
+      // Create download link with Excel extension
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `booking-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up after a short delay to ensure download starts
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+      
+      swal.success('Report Generated!', 'Your booking report has been generated and downloaded successfully.');
+    } catch (error: any) {
+      swal.error('Error', error.message || 'Failed to generate report. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -198,7 +234,10 @@ export default function BookingHistory() {
             >
               Export Data
             </button>
-            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 w-full sm:w-auto">
+            <button 
+              onClick={generateReport}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 w-full sm:w-auto"
+            >
               Generate Report
             </button>
           </div>

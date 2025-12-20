@@ -572,10 +572,24 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
     startDate?: string;
     endDate?: string;
     type?: string;
-  } = {}): Promise<ApiResponse> {
-    return this.request('/bookings/report', {
+    status?: string;
+    doctorId?: string;
+  } = {}): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/bookings/report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      },
       body: JSON.stringify(params),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Report generation failed' }));
+      throw new Error(errorData.message || 'Report generation failed');
+    }
+
+    return response.blob();
   }
 
   // Slots
