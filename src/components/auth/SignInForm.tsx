@@ -13,26 +13,67 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Reset errors
+    setError("");
+    setEmailError("");
+    setPasswordError("");
+
+    // Validate fields
     if (!email || !password) {
-      swal.error('Error', 'Please fill in all fields');
+      if (!email) {
+        setEmailError('Email is required');
+      }
+      if (!password) {
+        setPasswordError('Password is required');
+      }
+      setError('Please fill in all fields');
+      return;
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      setError('Invalid email format');
       return;
     }
 
     try {
       setLoading(true);
+      setError("");
       await login(email, password);
       
       swal.success('Success', 'Login successful!');
       
       navigate('/');
     } catch (error: any) {
-      swal.error('Login Failed', error.message || 'Invalid credentials');
+      const errorMessage = error.message || 'Invalid email or password';
+      
+      // Set appropriate error messages
+      if (errorMessage.toLowerCase().includes('email') || errorMessage.toLowerCase().includes('invalid credentials')) {
+        setEmailError('Invalid email or password');
+        setPasswordError('Invalid email or password');
+      } else if (errorMessage.toLowerCase().includes('password')) {
+        setPasswordError(errorMessage);
+      } else {
+        setError(errorMessage);
+      }
+      
+      // Show error alert
+      swal.error('Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -56,6 +97,13 @@ export default function SignInForm() {
         Securely access your admin dashboard
       </p>
       <form className="w-full space-y-6" onSubmit={handleSubmit}>
+        {/* General Error Message */}
+        {error && !emailError && !passwordError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
+
         <div>
           <Label htmlFor="email">
             Email <span className="text-red-500">*</span>
@@ -65,9 +113,17 @@ export default function SignInForm() {
             placeholder="admin@primehealth.com" 
             type="email" 
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setEmailError("");
+              setError("");
+            }}
+            error={!!emailError}
             // required
           />
+          {emailError && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{emailError}</p>
+          )}
         </div>
         <div>
           <Label htmlFor="password">
@@ -79,8 +135,16 @@ export default function SignInForm() {
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 pr-12 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800 dark:bg-gray-900 dark:placeholder:text-white/30"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError("");
+                setError("");
+              }}
+              className={`h-11 w-full rounded-lg border appearance-none px-4 py-2.5 pr-12 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 bg-transparent text-gray-800 ${
+                passwordError 
+                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20 dark:border-red-700' 
+                  : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700'
+              } dark:text-white/90 dark:focus:border-brand-800 dark:bg-gray-900 dark:placeholder:text-white/30`}
             />
             <button
               type="button"
@@ -94,6 +158,9 @@ export default function SignInForm() {
               )}
             </button>
           </div>
+          {passwordError && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{passwordError}</p>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

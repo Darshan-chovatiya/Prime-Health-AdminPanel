@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true);
       const response = await apiService.login(email, password);
       
-      if (response.data.token && response.data.admin) {
+      if (response.data && response.data.token && response.data.admin) {
         const token = response.data.token;
         const userData = response.data.admin;
         
@@ -71,9 +71,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error('Invalid response from server');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      throw error;
+      
+      // Provide user-friendly error messages
+      if (error.message) {
+        // If the error message contains "Invalid credentials" or similar, make it more user-friendly
+        if (error.message.toLowerCase().includes('invalid credentials') || 
+            error.message.toLowerCase().includes('invalid email') ||
+            error.message.toLowerCase().includes('invalid password')) {
+          throw new Error('Invalid email or password. Please check your credentials and try again.');
+        }
+        throw error;
+      }
+      
+      throw new Error('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
