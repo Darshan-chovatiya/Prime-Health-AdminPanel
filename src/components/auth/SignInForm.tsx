@@ -3,13 +3,11 @@ import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
-import Checkbox from "../form/input/Checkbox";
 import { useAuth } from "../../context/AuthContext";
 import swal from '../../utils/swalHelper';
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -162,21 +160,7 @@ export default function SignInForm() {
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{passwordError}</p>
           )}
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Checkbox checked={isChecked} onChange={setIsChecked} />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              Remember me
-            </span>
-          </div>
-          <Link
-            to="/reset-password"
-            className="text-sm text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
-          >
-            Forgot password?
-          </Link>
-        </div>
-<button
+        <button
   className="w-full bg-green-600 hover:bg-green-700 text-white mb-6 py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
   type="submit"
   disabled={loading}
