@@ -293,15 +293,19 @@ export default function DoctorModal({
     
     // Update form data
     if (name === 'consultationFee' || name === 'followUpFee') {
+      // Only allow numbers (no decimal points)
+      const numericValue = value.replace(/[^0-9]/g, '');
+      const numValue = numericValue === '' ? 0 : parseInt(numericValue, 10) || 0;
+      
       setFormData({
         ...formData,
         pricing: {
           ...formData.pricing,
-          [name]: value === '' ? 0 : parseFloat(value) || 0,
+          [name]: numValue,
         },
       });
       // Validate the field
-      const error = validateField(name, value === '' ? 0 : parseFloat(value) || 0);
+      const error = validateField(name, numValue);
       setErrors({ ...errors, [name]: error || undefined });
     } else {
       setFormData({ ...formData, [name]: value });
@@ -309,6 +313,28 @@ export default function DoctorModal({
       const error = validateField(name, value);
       setErrors({ ...errors, [name]: error || undefined });
     }
+  };
+
+  // Handle fee input change (for text inputs that only allow numbers)
+  const handleFeeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers (no decimal points)
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Update form data with the numeric value (as number for storage)
+    const numValue = numericValue === '' ? 0 : parseInt(numericValue, 10) || 0;
+    setFormData({
+      ...formData,
+      pricing: {
+        ...formData.pricing,
+        [name]: numValue,
+      },
+    });
+    
+    // Validate the field
+    const error = validateField(name, numValue);
+    setErrors({ ...errors, [name]: error || undefined });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -586,15 +612,48 @@ export default function DoctorModal({
                 Consultation Fee <span className="text-red-500">*</span>
               </label>
               <input
-                type="number"
+                type="text"
                 name="consultationFee"
-                value={formData.pricing.consultationFee}
-                onChange={handleInputChange}
+                value={formData.pricing.consultationFee || ''}
+                onChange={handleFeeInputChange}
+                onKeyDown={(e) => {
+                  // Allow: backspace, delete, tab, escape, enter
+                  if ([46, 8, 9, 27, 13].indexOf(e.keyCode) !== -1 ||
+                    // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                    (e.keyCode === 65 && e.ctrlKey === true) ||
+                    (e.keyCode === 67 && e.ctrlKey === true) ||
+                    (e.keyCode === 86 && e.ctrlKey === true) ||
+                    (e.keyCode === 88 && e.ctrlKey === true) ||
+                    // Allow: home, end, left, right
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                  }
+                  // Ensure that it is a number (0-9) and stop the keypress
+                  if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedText = e.clipboardData.getData('text');
+                  const numericValue = pastedText.replace(/[^0-9]/g, '');
+                  if (numericValue) {
+                    const numValue = parseInt(numericValue, 10) || 0;
+                    setFormData({
+                      ...formData,
+                      pricing: {
+                        ...formData.pricing,
+                        consultationFee: numValue,
+                      },
+                    });
+                    const error = validateField('consultationFee', numValue);
+                    setErrors({ ...errors, consultationFee: error || undefined });
+                  }
+                }}
                 className={`w-full rounded-lg border ${
                   errors.consultationFee ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
-                min="0"
-                step="0.01"
+                placeholder="0"
                 required
               />
               {errors.consultationFee && (
@@ -607,15 +666,48 @@ export default function DoctorModal({
                 Follow-up Fee
               </label>
               <input
-                type="number"
+                type="text"
                 name="followUpFee"
-                value={formData.pricing.followUpFee}
-                onChange={handleInputChange}
+                value={formData.pricing.followUpFee || ''}
+                onChange={handleFeeInputChange}
+                onKeyDown={(e) => {
+                  // Allow: backspace, delete, tab, escape, enter
+                  if ([46, 8, 9, 27, 13].indexOf(e.keyCode) !== -1 ||
+                    // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                    (e.keyCode === 65 && e.ctrlKey === true) ||
+                    (e.keyCode === 67 && e.ctrlKey === true) ||
+                    (e.keyCode === 86 && e.ctrlKey === true) ||
+                    (e.keyCode === 88 && e.ctrlKey === true) ||
+                    // Allow: home, end, left, right
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                  }
+                  // Ensure that it is a number (0-9) and stop the keypress
+                  if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedText = e.clipboardData.getData('text');
+                  const numericValue = pastedText.replace(/[^0-9]/g, '');
+                  if (numericValue) {
+                    const numValue = parseInt(numericValue, 10) || 0;
+                    setFormData({
+                      ...formData,
+                      pricing: {
+                        ...formData.pricing,
+                        followUpFee: numValue,
+                      },
+                    });
+                    const error = validateField('followUpFee', numValue);
+                    setErrors({ ...errors, followUpFee: error || undefined });
+                  }
+                }}
                 className={`w-full rounded-lg border ${
                   errors.followUpFee ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 } bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
-                min="0"
-                step="0.01"
+                placeholder="0"
               />
               {errors.followUpFee && (
                 <p className="mt-1 text-sm text-red-500">{errors.followUpFee}</p>
