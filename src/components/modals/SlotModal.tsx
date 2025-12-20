@@ -25,6 +25,18 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
 
   useEffect(() => {
     if (slot) {
+      let endDate = "";
+      if (slot.recurrenceDetails?.endDate) {
+        try {
+          const date = new Date(slot.recurrenceDetails.endDate);
+          if (!isNaN(date.getTime())) {
+            endDate = date.toISOString().slice(0, 10);
+          }
+        } catch (e) {
+          console.error('Error parsing endDate:', e);
+        }
+      }
+      
       setFormData({
         doctorId: slot.doctorId,
         startTime: new Date(slot.startTime).toISOString().slice(0, 16),
@@ -33,7 +45,7 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
         isRecurring: slot.isRecurring,
         recurrenceDetails: slot.recurrenceDetails || {
           frequency: "daily",
-          endDate: "",
+          endDate: endDate,
         },
       });
     }
@@ -227,19 +239,45 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   End Date
                 </label>
-                <input
-                  type="date"
-                  value={formData.recurrenceDetails.endDate}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    recurrenceDetails: { 
-                      ...formData.recurrenceDetails, 
-                      endDate: e.target.value 
-                    }
-                  })}
-                  min={formData.startTime ? new Date(formData.startTime).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    id="recurrence-end-date"
+                    value={formData.recurrenceDetails.endDate || ""}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      recurrenceDetails: { 
+                        ...formData.recurrenceDetails, 
+                        endDate: e.target.value 
+                      }
+                    })}
+                    min={formData.startTime ? new Date(formData.startTime).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 pr-10 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    style={{ 
+                      cursor: 'pointer',
+                      paddingRight: '2.5rem'
+                    }}
+                    onFocus={(e) => {
+                      // Try to open the date picker when focused (for browsers that support showPicker)
+                      const input = e.currentTarget;
+                      if (input && 'showPicker' in input && typeof (input as any).showPicker === 'function') {
+                        try {
+                          (input as any).showPicker();
+                        } catch (err) {
+                          // showPicker might not be available or might fail, that's okay
+                        }
+                      }
+                    }}
+                  />
+                  <label 
+                    htmlFor="recurrence-end-date"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 cursor-pointer pointer-events-none"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </label>
+                </div>
               </div>
             </div>
           )}
