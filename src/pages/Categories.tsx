@@ -139,13 +139,13 @@ export default function Categories() {
   return (
     <>
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Service Categories
           </h3>
           <button 
             onClick={() => setShowCreateModal(true)}
-            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 w-full sm:w-auto"
           >
             Add New Category
           </button>
@@ -206,7 +206,7 @@ export default function Categories() {
 
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-center gap-4">
+            <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-4">
               <SearchInput
                 placeholder="Search categories..."
                 value={searchTerm}
@@ -216,7 +216,7 @@ export default function Categories() {
               <select 
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -384,8 +384,8 @@ export default function Categories() {
         <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
             {/* Sticky Header */}
-            <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Category Details</h3>
+            <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Category Details</h3>
               <button
                 onClick={() => setViewingCategory(null)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -397,7 +397,7 @@ export default function Categories() {
             </div>
 
             {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="space-y-6">
                 {/* Category Header */}
                 <div className="flex items-center space-x-4">
@@ -468,7 +468,7 @@ export default function Categories() {
                 </div>
 
                 {/* Timestamps */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Created</h5>
                     <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
@@ -487,19 +487,19 @@ export default function Categories() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
               <button
                 onClick={() => {
                   setViewingCategory(null);
                   setEditingCategory(viewingCategory);
                 }}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto"
               >
                 Edit Category
               </button>
               <button
                 onClick={() => setViewingCategory(null)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors w-full sm:w-auto"
               >
                 Close
               </button>

@@ -175,13 +175,13 @@ export default function Slots() {
   return (
     <>
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Appointment Slots Management
           </h3>
           <button 
             onClick={() => setShowCreateModal(true)}
-            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 w-full sm:w-auto"
           >
             Create New Slot
           </button>
@@ -257,7 +257,7 @@ export default function Slots() {
 
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-center gap-4">
+            <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-4">
               <SearchInput
                 placeholder="Search by doctor name..."
                 value={searchTerm}
@@ -267,7 +267,7 @@ export default function Slots() {
               <select 
                 value={doctorFilter}
                 onChange={(e) => setDoctorFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
               >
                 <option value="all">All Doctors</option>
                 {doctors.map((doctor) => (
@@ -277,7 +277,7 @@ export default function Slots() {
               <select 
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
               >
                 <option value="all">All Status</option>
                 <option value="available">Available</option>

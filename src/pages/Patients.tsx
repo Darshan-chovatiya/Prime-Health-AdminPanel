@@ -303,12 +303,12 @@ export default function Patients() {
 
   const renderModal = (isCreate: boolean) => {
     return (
-      <div className="fixed inset-0 bg-[#1018285e] bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl m-4 max-h-[90vh] flex flex-col">
+      <div className="fixed inset-0 bg-[#1018285e] bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
           {/* Sticky Header */}
-          <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 px-4 sm:px-6 pt-4 sm:pt-6 pb-4 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
                 {isCreate ? 'Add New Patient' : 'Update Patient'}
               </h2>
               <button 
@@ -323,11 +323,11 @@ export default function Patients() {
           </div>
           
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <form id="patient-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Info */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Basic Information</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">Basic Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
@@ -421,7 +421,7 @@ export default function Patients() {
 
             {/* Address */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Address</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">Address</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Street</label>
@@ -478,8 +478,8 @@ export default function Patients() {
 
             {/* Emergency Contact */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Emergency Contact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">Emergency Contact</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
                   <input 
@@ -523,8 +523,8 @@ export default function Patients() {
 
             {/* Allergies */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Allergies</h3>
-              <div className="flex gap-2 mb-3">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">Allergies</h3>
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
                 <input 
                   value={allergyInput} 
                   onChange={(e) => setAllergyInput(e.target.value)} 
@@ -534,7 +534,7 @@ export default function Patients() {
                 <button 
                   type="button" 
                   onClick={addAllergy} 
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto"
                 >
                   Add
                 </button>
@@ -551,8 +551,8 @@ export default function Patients() {
 
             {/* Medical History */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Medical History</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">Medical History</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                 <input 
                   name="condition" 
                   value={newMedical.condition} 
@@ -585,7 +585,7 @@ export default function Patients() {
               <button 
                 type="button" 
                 onClick={addMedicalHistory} 
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mb-3"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mb-3 w-full sm:w-auto"
               >
                 Add History
               </button>
@@ -614,19 +614,19 @@ export default function Patients() {
           </div>
           
           {/* Sticky Footer */}
-          <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 px-6 pt-4 pb-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
-            <div className="flex justify-end gap-3">
+          <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 px-4 sm:px-6 pt-4 pb-4 sm:pb-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
               <button 
                 type="button" 
                 onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} 
-                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400"
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 w-full sm:w-auto"
               >
                 Cancel
               </button>
               <button 
                 type="submit" 
                 form="patient-form"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 w-full sm:w-auto"
               >
                 {isCreate ? 'Create Patient' : 'Update Patient'}
               </button>
@@ -643,21 +643,21 @@ export default function Patients() {
       <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 gap-4">
             <div className="flex items-center space-x-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/20">
-                <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/20 flex-shrink-0">
+                <svg className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Patient Details</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Complete patient information and medical history</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Patient Details</h2>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Complete patient information and medical history</p>
               </div>
             </div>
             <button 
               onClick={() => setShowViewModal(false)} 
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors self-end sm:self-auto"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -666,8 +666,8 @@ export default function Patients() {
           </div>
 
           {/* Scrollable Body */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Basic Information */}
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
@@ -883,14 +883,14 @@ export default function Patients() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => {
                 setShowViewModal(false);
                 setSelectedPatient(selectedPatient);
                 setShowEditModal(true);
               }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 w-full sm:w-auto"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -899,7 +899,7 @@ export default function Patients() {
             </button>
             <button
               onClick={() => setShowViewModal(false)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2 w-full sm:w-auto"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -923,13 +923,13 @@ export default function Patients() {
   return (
     <>
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Patient Management
           </h3>
           <button 
             onClick={handleOpenCreate}
-            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 w-full sm:w-auto"
           >
             Add New Patient
           </button>
@@ -1005,7 +1005,7 @@ export default function Patients() {
 
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-center gap-4">
+            <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-4">
               <SearchInput
                 placeholder="Search patients..."
                 value={searchTerm}
@@ -1015,7 +1015,7 @@ export default function Patients() {
               <select 
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>

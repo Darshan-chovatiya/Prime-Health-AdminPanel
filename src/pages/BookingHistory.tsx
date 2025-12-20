@@ -187,18 +187,18 @@ export default function BookingHistory() {
   return (
     <>
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Booking History
           </h3>
-          <div className="flex space-x-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button 
               onClick={exportBookings}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 w-full sm:w-auto"
             >
               Export Data
             </button>
-            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">
+            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 w-full sm:w-auto">
               Generate Report
             </button>
           </div>
@@ -274,7 +274,7 @@ export default function BookingHistory() {
 
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-center gap-4">
+            <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-4">
               <SearchInput
                 placeholder="Search bookings..."
                 value={searchTerm}
@@ -283,7 +283,7 @@ export default function BookingHistory() {
               <select 
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
               >
                 <option value="all">All Status</option>
                 <option value="scheduled">Scheduled</option>
@@ -296,7 +296,7 @@ export default function BookingHistory() {
               <select 
                 value={doctorFilter}
                 onChange={(e) => setDoctorFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
               >
                 <option value="all">All Doctors</option>
                 {doctors.map((doctor) => (
@@ -306,7 +306,7 @@ export default function BookingHistory() {
               <select 
                 value={patientFilter}
                 onChange={(e) => setPatientFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
               >
                 <option value="all">All Patients</option>
                 {patients.map((patient) => (
@@ -497,8 +497,8 @@ export default function BookingHistory() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sticky Header */}
-            <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Booking Details</h3>
+            <div className="sticky top-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Booking Details</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -510,7 +510,7 @@ export default function BookingHistory() {
             </div>
 
             {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="space-y-6">
                 {/* Patient Header */}
                 <div className="flex items-center space-x-4">
@@ -734,7 +734,7 @@ export default function BookingHistory() {
                 </div>
 
                 {/* Timestamps */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Created</h5>
                     <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
@@ -753,10 +753,10 @@ export default function BookingHistory() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+            <div className="sticky bottom-0 bg-white dark:bg-gray-800 z-10 flex items-center justify-end p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors w-full sm:w-auto"
               >
                 Close
               </button>

@@ -476,9 +476,9 @@ export default function Home() {
   return (
     <>
       {/* Period Selector */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard Overview</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Dashboard Overview</h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Welcome back! Here's what's happening with your practice today.
           </p>
@@ -706,18 +706,18 @@ export default function Home() {
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Comprehensive Dashboard Bar Chart */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Dashboard Overview</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Dashboard Overview</h3>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 Comprehensive view for {barChartPeriod.charAt(0).toUpperCase() + barChartPeriod.slice(1)}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <select
                 value={barChartPeriod}
                 onChange={(e) => setBarChartPeriod(e.target.value as 'week' | 'month' | 'year')}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800 w-full sm:w-auto"
               >
                 <option value="week">Week</option>
                 <option value="month">Month</option>
@@ -751,26 +751,26 @@ export default function Home() {
 
         {/* Appointment Status Pie Chart */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="mb-12 flex items-center justify-between">
+          <div className="mb-6 sm:mb-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Appointment Status</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Appointment Status</h3>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 Breakdown by status for {pieChartPeriod.charAt(0).toUpperCase() + pieChartPeriod.slice(1)}
               </p>
             </div>
-            <div className="flex gap-2" style={{paddingRight:"2px"}}>
+            <div className="flex gap-2 w-full sm:w-auto">
               <select
                 value={pieChartPeriod}
                 onChange={(e) => setPieChartPeriod(e.target.value as 'week' | 'month' | 'year')}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800"
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800 w-full sm:w-auto"
               >
                 <option value="week">Week</option>
-                <option value="month">  Month</option>
+                <option value="month">Month</option>
                 <option value="year">Year</option>
               </select>
             </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col lg:flex-row items-center gap-6">
             <div className="flex-1">
               {pieChartLoading ? (
                 <div className="flex h-[400px] items-center justify-center">
@@ -799,7 +799,7 @@ export default function Home() {
             </div>
             {/* Custom Status Cards - Beside chart */}
             {appointmentData?.statusBreakdown && appointmentData.statusBreakdown.length > 0 && (
-              <div className="flex flex-col gap-1.5 bg-white dark:bg-white/[0.03] rounded-lg p-2 pt-6">
+              <div className="flex flex-row lg:flex-col gap-1.5 bg-white dark:bg-white/[0.03] rounded-lg p-2 pt-6 w-full lg:w-auto overflow-x-auto lg:overflow-x-visible">
                 {appointmentData.statusBreakdown.map((item: any) => {
                   const statusName = item._id
                     .split('_')
@@ -858,10 +858,10 @@ export default function Home() {
 
       {/* Recent Bookings */}
       <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Bookings</h3>
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Recent Bookings</h3>
           <button 
-            className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+            className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700 w-full sm:w-auto"
             onClick={() => navigate('/booking-history')}
           >
             View All
@@ -915,10 +915,10 @@ export default function Home() {
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Doctors */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Doctors</h3>
+          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Recent Doctors</h3>
             <button 
-              className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+              className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700 w-full sm:w-auto"
               onClick={() => navigate('/doctors-labs')}
             >
               View All
@@ -987,10 +987,10 @@ export default function Home() {
 
         {/* Recent Slots */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Slots</h3>
+          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Recent Slots</h3>
             <button 
-              className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
+              className="rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700 w-full sm:w-auto"
               onClick={() => navigate('/slots')}
             >
               View All
