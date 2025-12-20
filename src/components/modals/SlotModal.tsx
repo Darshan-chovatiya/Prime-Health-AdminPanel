@@ -37,8 +37,18 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
         }
       }
       
+      // Handle doctorId - it might be an object (populated) or a string
+      let doctorIdValue = "";
+      if (slot.doctorId) {
+        if (typeof slot.doctorId === 'object' && slot.doctorId !== null && '_id' in slot.doctorId) {
+          doctorIdValue = slot.doctorId._id;
+        } else if (typeof slot.doctorId === 'string') {
+          doctorIdValue = slot.doctorId;
+        }
+      }
+      
       setFormData({
-        doctorId: slot.doctorId,
+        doctorId: doctorIdValue,
         startTime: new Date(slot.startTime).toISOString().slice(0, 16),
         endTime: new Date(slot.endTime).toISOString().slice(0, 16),
         status: slot.status,
@@ -97,13 +107,27 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
       }
     }
 
+    // Format end date properly for backend
+    let formattedEndDate = undefined;
+    if (formData.isRecurring && formData.recurrenceDetails.endDate) {
+      // If endDate is in YYYY-MM-DD format, add time to make it a valid date
+      const dateStr = formData.recurrenceDetails.endDate;
+      if (dateStr.includes('T')) {
+        // Already has time component
+        formattedEndDate = new Date(dateStr).toISOString();
+      } else {
+        // Just date, add midnight time
+        formattedEndDate = new Date(dateStr + 'T00:00:00').toISOString();
+      }
+    }
+
     const submitData = {
       ...formData,
       startTime: new Date(formData.startTime).toISOString(),
       endTime: new Date(formData.endTime).toISOString(),
       recurrenceDetails: formData.isRecurring ? {
-        ...formData.recurrenceDetails,
-        endDate: formData.recurrenceDetails.endDate ? new Date(formData.recurrenceDetails.endDate).toISOString() : undefined,
+        frequency: formData.recurrenceDetails.frequency,
+        endDate: formattedEndDate,
       } : undefined,
     };
 
