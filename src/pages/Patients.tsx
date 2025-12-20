@@ -435,109 +435,6 @@ export default function Patients() {
     setFormData({ ...formData, medicalHistory: newHistory });
   };
 
-  const validateForm = (): string | null => {
-    // Name validation: required, min 2, max 50
-    if (!formData.name || formData.name.trim().length < 2 || formData.name.trim().length > 50) {
-      return 'Name is required and must be between 2 and 50 characters';
-    }
-
-    // Email validation: required for create, optional for update
-    if (showCreateModal) {
-      if (!formData.email || !formData.email.trim()) {
-        return 'Email is required';
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-        return 'Please enter a valid email address';
-      }
-    } else {
-      // For update, email is optional but must be valid if provided
-      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-        return 'Please enter a valid email address';
-      }
-    }
-
-    // Mobile number validation: required, exactly 10 digits
-    if (!formData.mobileNo) {
-      return 'Mobile number is required';
-    }
-    if (!/^[0-9]{10}$/.test(formData.mobileNo)) {
-      return 'Mobile number must be exactly 10 digits';
-    }
-
-    // Date of birth validation: required, must be a valid date, not in the future
-    if (!formData.dateOfBirth) {
-      return 'Date of birth is required';
-    }
-    const dob = new Date(formData.dateOfBirth);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (isNaN(dob.getTime())) {
-      return 'Please enter a valid date of birth';
-    }
-    if (dob > today) {
-      return 'Date of birth cannot be in the future';
-    }
-
-    // Gender validation: required, must be one of the valid values
-    if (!formData.gender || !['male', 'female', 'other'].includes(formData.gender)) {
-      return 'Please select a valid gender';
-    }
-
-    // Blood group validation: optional but must be valid if provided
-    const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-    if (formData.bloodGroup && !validBloodGroups.includes(formData.bloodGroup)) {
-      return 'Please select a valid blood group';
-    }
-
-    // Emergency contact validation: optional during update, but if any field is provided, all are required
-    // Only validate if we're creating a new patient OR if any emergency contact field is filled
-    if (showCreateModal || formData.emergencyContact.name || formData.emergencyContact.relationship || formData.emergencyContact.mobileNo) {
-      // If creating, emergency contact is optional
-      // If updating and any field is provided, all fields must be provided
-      const hasAnyField = formData.emergencyContact.name || formData.emergencyContact.relationship || formData.emergencyContact.mobileNo;
-      const hasAllFields = formData.emergencyContact.name && formData.emergencyContact.relationship && formData.emergencyContact.mobileNo;
-      
-      if (hasAnyField && !hasAllFields) {
-        return 'If providing emergency contact, all fields (name, relationship, mobile number) are required';
-      }
-      
-      if (hasAllFields) {
-        if (formData.emergencyContact.name.trim().length < 2) {
-          return 'Emergency contact name must be at least 2 characters';
-        }
-        if (formData.emergencyContact.relationship.trim().length < 2) {
-          return 'Emergency contact relationship must be at least 2 characters';
-        }
-        if (!/^[0-9]{10}$/.test(formData.emergencyContact.mobileNo)) {
-          return 'Emergency contact mobile number must be exactly 10 digits';
-        }
-      }
-    }
-
-    // Medical history validation: if provided, all fields are required
-    for (let i = 0; i < formData.medicalHistory.length; i++) {
-      const history = formData.medicalHistory[i];
-      if (!history.condition || !history.condition.trim()) {
-        return `Medical history entry ${i + 1}: Condition is required`;
-      }
-      if (!history.diagnosis || !history.diagnosis.trim()) {
-        return `Medical history entry ${i + 1}: Diagnosis is required`;
-      }
-      if (!history.treatment || !history.treatment.trim()) {
-        return `Medical history entry ${i + 1}: Treatment is required`;
-      }
-      if (!history.date) {
-        return `Medical history entry ${i + 1}: Date is required`;
-      }
-      const historyDate = new Date(history.date);
-      if (isNaN(historyDate.getTime())) {
-        return `Medical history entry ${i + 1}: Please enter a valid date`;
-      }
-    }
-
-    return null; // No validation errors
-  };
-
   // Check if all required fields are filled (for button disable state)
   const isFormValid = (): boolean => {
     if (showCreateModal) {
@@ -1503,20 +1400,7 @@ export default function Patients() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => {
-                setShowViewModal(false);
-                setSelectedPatient(selectedPatient);
-                setShowEditModal(true);
-              }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 w-full sm:w-auto"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              <span>Edit Patient</span>
-            </button>
+          <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setShowViewModal(false)}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2 w-full sm:w-auto"

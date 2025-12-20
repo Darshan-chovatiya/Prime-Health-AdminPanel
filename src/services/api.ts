@@ -1,5 +1,5 @@
-export const API_BASE_URL = 'http://localhost:3300/api/admin';
-// export const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
+// export const API_BASE_URL = 'http://localhost:3300/api/admin';
+export const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
 // export const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
 
 // Types
@@ -298,15 +298,29 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
   }
 
   async createAdmin(adminData: Partial<Admin> & { password: string }): Promise<ApiResponse<{ admin: Admin }>> {
-    return this.request('/admins/create', {
+    const response = await this.request<{ admin: Admin } | 0>('/admins/create', {
       body: JSON.stringify(adminData),
     });
+    
+    // Check if backend returned an error message with data: 0 (status 200 but error condition)
+    if (response.data === 0 || response.data === null || (!response.data && response.message)) {
+      throw new Error(response.message || 'Failed to create admin');
+    }
+    
+    return response as ApiResponse<{ admin: Admin }>;
   }
 
   async updateAdmin(adminData: Partial<Admin> & { id: string }): Promise<ApiResponse<{ admin: Admin }>> {
-    return this.request('/admins/update', {
+    const response = await this.request<{ admin: Admin } | 0>('/admins/update', {
       body: JSON.stringify(adminData),
     });
+    
+    // Check if backend returned an error message with data: 0 (status 200 but error condition)
+    if (response.data === 0 || response.data === null || (!response.data && response.message)) {
+      throw new Error(response.message || 'Failed to update admin');
+    }
+    
+    return response as ApiResponse<{ admin: Admin }>;
   }
 
   async deleteAdmin(id: string): Promise<ApiResponse> {
