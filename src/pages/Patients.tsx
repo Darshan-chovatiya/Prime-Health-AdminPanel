@@ -82,6 +82,28 @@ export default function Patients() {
     date: ''
   });
 
+  // Validation errors state
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    mobileNo?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    bloodGroup?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      zipCode?: string;
+      country?: string;
+    };
+    emergencyContact?: {
+      name?: string;
+      relationship?: string;
+      mobileNo?: string;
+    };
+  }>({});
+
   // Reset to first page when filters change
   useEffect(() => {
     if (currentPage !== 1) {
@@ -178,6 +200,7 @@ export default function Patients() {
       treatment: '',
       date: ''
     });
+    setErrors({});
   };
 
   const handleOpenCreate = () => {
@@ -209,6 +232,7 @@ export default function Patients() {
         setProfileImageFile(null);
         setProfileImagePreview(patient.profileImage ? getImageUrl(patient.profileImage) : '');
         setSelectedPatient(patient);
+        setErrors({});
         setShowEditModal(true);
       } else {
         swal.error('Error', response.message);
@@ -233,24 +257,144 @@ export default function Patients() {
     }
   };
 
+  // Validate individual field
+  const validateField = (name: string, value: any, fieldType?: 'address' | 'emergencyContact'): string | null => {
+    if (fieldType === 'address') {
+      // Address fields are optional, but if any is provided, all must be non-empty
+      const hasAnyField = formData.address.street || formData.address.city || formData.address.state || formData.address.zipCode || formData.address.country;
+      if (hasAnyField) {
+        if (name === 'street' && !value?.trim()) return 'Street is required if address is provided';
+        if (name === 'city' && !value?.trim()) return 'City is required if address is provided';
+        if (name === 'state' && !value?.trim()) return 'State is required if address is provided';
+        if (name === 'zipCode' && !value?.trim()) return 'Zip code is required if address is provided';
+        if (name === 'country' && !value?.trim()) return 'Country is required if address is provided';
+      }
+      return null;
+    }
+
+    if (fieldType === 'emergencyContact') {
+      // Emergency contact: if any field is provided, all are required
+      const hasAnyField = formData.emergencyContact.name || formData.emergencyContact.relationship || formData.emergencyContact.mobileNo;
+      if (hasAnyField) {
+        if (name === 'name' && !value?.trim()) return 'Emergency contact name is required';
+        if (name === 'name' && value?.trim().length < 2) return 'Emergency contact name must be at least 2 characters';
+        if (name === 'relationship' && !value?.trim()) return 'Emergency contact relationship is required';
+        if (name === 'relationship' && value?.trim().length < 2) return 'Emergency contact relationship must be at least 2 characters';
+        if (name === 'mobileNo' && !value?.trim()) return 'Emergency contact mobile number is required';
+        if (name === 'mobileNo' && !/^[0-9]{10}$/.test(value?.trim() || '')) return 'Emergency contact mobile number must be exactly 10 digits';
+      }
+      return null;
+    }
+
+    switch (name) {
+      case 'name':
+        if (!value || value.trim().length < 2) {
+          return 'Name must be at least 2 characters';
+        }
+        if (value.trim().length > 50) {
+          return 'Name must be less than 50 characters';
+        }
+        return null;
+      
+      case 'email':
+        if (showCreateModal) {
+          if (!value || !value.trim()) {
+            return 'Email is required';
+          }
+        }
+        if (value && value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+          return 'Please enter a valid email address';
+        }
+        return null;
+      
+      case 'mobileNo':
+        if (!value || value.trim().length === 0) {
+          return 'Mobile number is required';
+        }
+        if (!/^[0-9]{10}$/.test(value.trim())) {
+          return 'Mobile number must be exactly 10 digits';
+        }
+        return null;
+      
+      case 'dateOfBirth':
+        if (!value) {
+          return 'Date of birth is required';
+        }
+        const dob = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (isNaN(dob.getTime())) {
+          return 'Please enter a valid date of birth';
+        }
+        if (dob > today) {
+          return 'Date of birth cannot be in the future';
+        }
+        return null;
+      
+      case 'gender':
+        if (!value || !['male', 'female', 'other'].includes(value)) {
+          return 'Please select a valid gender';
+        }
+        return null;
+      
+      case 'bloodGroup':
+        if (value) {
+          const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+          if (!validBloodGroups.includes(value)) {
+            return 'Please select a valid blood group';
+          }
+        }
+        return null;
+      
+      default:
+        return null;
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    
+    // Validate the field
+    const error = validateField(name, value);
+    setErrors({ ...errors, [name]: error || undefined });
   };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const updatedAddress = { ...formData.address, [name]: value };
     setFormData({
       ...formData,
-      address: { ...formData.address, [name]: value }
+      address: updatedAddress
+    });
+    
+    // Validate the address field
+    const error = validateField(name, value, 'address');
+    setErrors({
+      ...errors,
+      address: {
+        ...errors.address,
+        [name]: error || undefined
+      }
     });
   };
 
   const handleEmergencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const updatedEmergency = { ...formData.emergencyContact, [name]: value };
     setFormData({
       ...formData,
-      emergencyContact: { ...formData.emergencyContact, [name]: value }
+      emergencyContact: updatedEmergency
+    });
+    
+    // Validate the emergency contact field
+    const error = validateField(name, value, 'emergencyContact');
+    setErrors({
+      ...errors,
+      emergencyContact: {
+        ...errors.emergencyContact,
+        [name]: error || undefined
+      }
     });
   };
 
@@ -421,10 +565,47 @@ export default function Patients() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form before submission
-    const validationError = validateForm();
-    if (validationError) {
-      swal.error('Validation Error', validationError);
+    // Validate all fields before submission
+    const validationErrors: any = {};
+    validationErrors.name = validateField('name', formData.name);
+    validationErrors.email = validateField('email', formData.email);
+    validationErrors.mobileNo = validateField('mobileNo', formData.mobileNo);
+    validationErrors.dateOfBirth = validateField('dateOfBirth', formData.dateOfBirth);
+    validationErrors.gender = validateField('gender', formData.gender);
+    validationErrors.bloodGroup = validateField('bloodGroup', formData.bloodGroup);
+    
+    // Validate address fields
+    const addressErrors: any = {};
+    addressErrors.street = validateField('street', formData.address.street, 'address');
+    addressErrors.city = validateField('city', formData.address.city, 'address');
+    addressErrors.state = validateField('state', formData.address.state, 'address');
+    addressErrors.zipCode = validateField('zipCode', formData.address.zipCode, 'address');
+    addressErrors.country = validateField('country', formData.address.country, 'address');
+    if (Object.keys(addressErrors).some(key => addressErrors[key])) {
+      validationErrors.address = addressErrors;
+    }
+    
+    // Validate emergency contact fields
+    const emergencyErrors: any = {};
+    emergencyErrors.name = validateField('name', formData.emergencyContact.name, 'emergencyContact');
+    emergencyErrors.relationship = validateField('relationship', formData.emergencyContact.relationship, 'emergencyContact');
+    emergencyErrors.mobileNo = validateField('mobileNo', formData.emergencyContact.mobileNo, 'emergencyContact');
+    if (Object.keys(emergencyErrors).some(key => emergencyErrors[key])) {
+      validationErrors.emergencyContact = emergencyErrors;
+    }
+    
+    // Remove undefined values
+    Object.keys(validationErrors).forEach(key => {
+      if (!validationErrors[key] || (typeof validationErrors[key] === 'object' && Object.keys(validationErrors[key]).length === 0)) {
+        delete validationErrors[key];
+      }
+    });
+    
+    setErrors(validationErrors);
+    
+    // Check if form is valid
+    if (Object.keys(validationErrors).length > 0) {
+      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
@@ -554,6 +735,7 @@ export default function Patients() {
                   setShowEditModal(false);
                   setProfileImageFile(null);
                   setProfileImagePreview('');
+                  setErrors({});
                 }} 
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
@@ -580,9 +762,14 @@ export default function Patients() {
                     value={formData.name} 
                     onChange={handleInputChange} 
                     required 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.name ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter full name"
                   />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -597,13 +784,18 @@ export default function Patients() {
                     onChange={handleInputChange} 
                     readOnly={showEditModal}
                     required={showCreateModal}
-                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.email ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    } ${
                       showEditModal 
                         ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-75' 
                         : ''
                     }`}
                     placeholder="Enter email"
                   />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -625,7 +817,9 @@ export default function Patients() {
                     readOnly={showEditModal}
                     required 
                     pattern="[0-9]{10}" 
-                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.mobileNo ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    } ${
                       showEditModal 
                         ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-75' 
                         : ''
@@ -633,6 +827,9 @@ export default function Patients() {
                     placeholder="Enter 10-digit mobile number (numbers only)"
                     maxLength={10}
                   />
+                  {errors.mobileNo && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.mobileNo}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -647,7 +844,9 @@ export default function Patients() {
                       onChange={handleInputChange} 
                       required 
                       max={new Date().toISOString().split('T')[0]}
-                      className="w-full border rounded-lg px-3 py-2 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500 cursor-pointer" 
+                      className={`w-full border rounded-lg px-3 py-2 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 cursor-pointer ${
+                        errors.dateOfBirth ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                      }`}
                       style={{ paddingRight: '2.5rem' }}
                       onFocus={(e) => {
                         const input = e.currentTarget;
@@ -669,6 +868,9 @@ export default function Patients() {
                       </svg>
                     </label>
                   </div>
+                  {errors.dateOfBirth && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dateOfBirth}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -679,13 +881,18 @@ export default function Patients() {
                     value={formData.gender} 
                     onChange={handleInputChange} 
                     required 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500"
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.gender ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                   >
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                   </select>
+                  {errors.gender && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.gender}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Blood Group</label>
@@ -693,7 +900,9 @@ export default function Patients() {
                     name="bloodGroup" 
                     value={formData.bloodGroup} 
                     onChange={handleInputChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500"
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.bloodGroup ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                   >
                     <option value="">Select Blood Group</option>
                     <option value="A+">A+</option>
@@ -705,6 +914,9 @@ export default function Patients() {
                     <option value="O+">O+</option>
                     <option value="O-">O-</option>
                   </select>
+                  {errors.bloodGroup && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.bloodGroup}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -719,9 +931,14 @@ export default function Patients() {
                     name="street" 
                     value={formData.address.street} 
                     onChange={handleAddressChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.address?.street ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter street"
                   />
+                  {errors.address?.street && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address.street}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
@@ -729,9 +946,14 @@ export default function Patients() {
                     name="city" 
                     value={formData.address.city} 
                     onChange={handleAddressChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.address?.city ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter city"
                   />
+                  {errors.address?.city && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address.city}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
@@ -739,9 +961,14 @@ export default function Patients() {
                     name="state" 
                     value={formData.address.state} 
                     onChange={handleAddressChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.address?.state ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter state"
                   />
+                  {errors.address?.state && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address.state}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zip Code</label>
@@ -749,9 +976,14 @@ export default function Patients() {
                     name="zipCode" 
                     value={formData.address.zipCode} 
                     onChange={handleAddressChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.address?.zipCode ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter zip code"
                   />
+                  {errors.address?.zipCode && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address.zipCode}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
@@ -759,9 +991,14 @@ export default function Patients() {
                     name="country" 
                     value={formData.address.country} 
                     onChange={handleAddressChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.address?.country ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter country"
                   />
+                  {errors.address?.country && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address.country}</p>
+                  )}
                 </div>
               </div>
             </div>
