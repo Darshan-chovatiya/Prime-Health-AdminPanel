@@ -23,6 +23,14 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
     },
   });
 
+  // Validation errors state
+  const [errors, setErrors] = useState<{
+    doctorId?: string;
+    startTime?: string;
+    endTime?: string;
+    recurrenceEndDate?: string;
+  }>({});
+
   useEffect(() => {
     if (slot) {
       let endDate = "";
@@ -58,53 +66,149 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
           endDate: endDate,
         },
       });
+    } else {
+      setFormData({
+        doctorId: "",
+        startTime: "",
+        endTime: "",
+        status: "available",
+        isRecurring: false,
+        recurrenceDetails: {
+          frequency: "daily",
+          endDate: "",
+        },
+      });
     }
+    setErrors({});
   }, [slot]);
+
+  // Validate individual field
+  const validateField = (name: string, value: any): string | null => {
+    switch (name) {
+      case 'doctorId':
+        if (!value || value.trim().length === 0) {
+          return 'Doctor is required';
+        }
+        return null;
+      
+      case 'startTime':
+        if (!value) {
+          return 'Start time is required';
+        }
+        const startDate = new Date(value);
+        if (isNaN(startDate.getTime())) {
+          return 'Please enter a valid start time';
+        }
+        if (!slot) {
+          const now = new Date();
+          if (startDate <= now) {
+            return 'Start time must be in the future';
+          }
+        }
+        return null;
+      
+      case 'endTime':
+        if (!value) {
+          return 'End time is required';
+        }
+        const endDate = new Date(value);
+        if (isNaN(endDate.getTime())) {
+          return 'Please enter a valid end time';
+        }
+        if (formData.startTime) {
+          const startDate = new Date(formData.startTime);
+          if (endDate <= startDate) {
+            return 'End time must be after start time';
+          }
+        }
+        return null;
+      
+      case 'recurrenceEndDate':
+        if (formData.isRecurring && value) {
+          const recurrenceEndDate = new Date(value);
+          if (isNaN(recurrenceEndDate.getTime())) {
+            return 'Please enter a valid recurrence end date';
+          }
+          if (formData.startTime) {
+            const startDate = new Date(formData.startTime);
+            if (recurrenceEndDate <= startDate) {
+              return 'Recurrence end date must be after the start time';
+            }
+          }
+        }
+        return null;
+      
+      default:
+        return null;
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'doctorId' || name === 'startTime' || name === 'endTime') {
+      setFormData({ ...formData, [name]: value });
+      // Validate the field
+      const error = validateField(name, value);
+      setErrors({ ...errors, [name]: error || undefined });
+      
+      // If startTime changed, revalidate endTime
+      if (name === 'startTime') {
+        const endTimeError = validateField('endTime', formData.endTime);
+        setErrors(prev => ({ ...prev, endTime: endTimeError || undefined }));
+      }
+    } else if (name === 'status') {
+      setFormData({ ...formData, status: value as "available" | "booked" | "blocked" });
+    } else if (name === 'isRecurring') {
+      setFormData({ ...formData, isRecurring: (e.target as HTMLInputElement).checked });
+    } else if (name === 'frequency') {
+      setFormData({ 
+        ...formData, 
+        recurrenceDetails: { 
+          ...formData.recurrenceDetails, 
+          frequency: value as "daily" | "weekly" | "monthly" 
+        }
+      });
+    }
+  };
+
+  const handleRecurrenceEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ 
+      ...formData, 
+      recurrenceDetails: { 
+        ...formData.recurrenceDetails, 
+        endDate: value 
+      }
+    });
+    // Validate the recurrence end date
+    const error = validateField('recurrenceEndDate', value);
+    setErrors({ ...errors, recurrenceEndDate: error || undefined });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.doctorId || !formData.startTime || !formData.endTime) {
-      swal.error("Validation Error", "Please fill in all required fields");
+    // Validate all fields
+    const validationErrors: any = {};
+    validationErrors.doctorId = validateField('doctorId', formData.doctorId);
+    validationErrors.startTime = validateField('startTime', formData.startTime);
+    validationErrors.endTime = validateField('endTime', formData.endTime);
+    if (formData.isRecurring) {
+      validationErrors.recurrenceEndDate = validateField('recurrenceEndDate', formData.recurrenceDetails.endDate);
+    }
+
+    // Remove undefined values
+    Object.keys(validationErrors).forEach(key => {
+      if (!validationErrors[key]) delete validationErrors[key];
+    });
+
+    setErrors(validationErrors);
+
+    // Check if form is valid
+    if (Object.keys(validationErrors).length > 0) {
+      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
-    }
-
-    // Parse dates and validate
-    const startDate = new Date(formData.startTime);
-    const endDate = new Date(formData.endTime);
-    
-    // Check if dates are valid
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      swal.error("Invalid Date", "Please enter valid start and end times");
-      return;
-    }
-
-    // Check if end time is after start time
-    if (startDate >= endDate) {
-      swal.error("Invalid Time Range", "End time must be after start time");
-      return;
-    }
-
-    // Check if start time is in the future (only for new slots, not when editing)
-    if (!slot) {
-      const now = new Date();
-      if (startDate <= now) {
-        swal.error("Invalid Start Time", "Start time must be in the future");
-        return;
-      }
-    }
-
-    // Validate recurring slot end date if recurring is enabled
-    if (formData.isRecurring && formData.recurrenceDetails.endDate) {
-      const recurrenceEndDate = new Date(formData.recurrenceDetails.endDate);
-      if (isNaN(recurrenceEndDate.getTime())) {
-        swal.error("Invalid Recurrence End Date", "Please enter a valid recurrence end date");
-        return;
-      }
-      if (recurrenceEndDate <= startDate) {
-        swal.error("Invalid Recurrence End Date", "Recurrence end date must be after the start time");
-        return;
-      }
     }
 
     // Format end date properly for backend
@@ -162,12 +266,15 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Doctor *
+                Doctor <span className="text-red-500">*</span>
               </label>
               <select
+                name="doctorId"
                 value={formData.doctorId}
-                onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                  errors.doctorId ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+                }`}
                 required
               >
                 <option value="">Select Doctor</option>
@@ -177,6 +284,9 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                   </option>
                 ))}
               </select>
+              {errors.doctorId && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.doctorId}</p>
+              )}
             </div>
 
             <div>
@@ -196,30 +306,42 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Start Time *
+                Start Time <span className="text-red-500">*</span>
               </label>
               <input
                 type="datetime-local"
+                name="startTime"
                 value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                onChange={handleInputChange}
                 min={slot ? undefined : new Date().toISOString().slice(0, 16)}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                  errors.startTime ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+                }`}
                 required
               />
+              {errors.startTime && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.startTime}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                End Time *
+                End Time <span className="text-red-500">*</span>
               </label>
               <input
                 type="datetime-local"
+                name="endTime"
                 value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                onChange={handleInputChange}
                 min={formData.startTime || (slot ? undefined : new Date().toISOString().slice(0, 16))}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                  errors.endTime ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+                }`}
                 required
               />
+              {errors.endTime && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.endTime}</p>
+              )}
             </div>
           </div>
 
@@ -227,8 +349,9 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
             <input
               type="checkbox"
               id="isRecurring"
+              name="isRecurring"
               checked={formData.isRecurring}
-              onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+              onChange={handleInputChange}
               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
             <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
@@ -243,14 +366,9 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                   Frequency
                 </label>
                 <select
+                  name="frequency"
                   value={formData.recurrenceDetails.frequency}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    recurrenceDetails: { 
-                      ...formData.recurrenceDetails, 
-                      frequency: e.target.value as "daily" | "weekly" | "monthly" 
-                    }
-                  })}
+                  onChange={handleInputChange}
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 >
                   <option value="daily">Daily</option>
@@ -268,15 +386,11 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                     type="date"
                     id="recurrence-end-date"
                     value={formData.recurrenceDetails.endDate || ""}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      recurrenceDetails: { 
-                        ...formData.recurrenceDetails, 
-                        endDate: e.target.value 
-                      }
-                    })}
+                    onChange={handleRecurrenceEndDateChange}
                     min={formData.startTime ? new Date(formData.startTime).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 pr-10 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 pr-10 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                      errors.recurrenceEndDate ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+                    }`}
                     style={{ 
                       cursor: 'pointer',
                       paddingRight: '2.5rem'
@@ -293,6 +407,9 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
                       }
                     }}
                   />
+                  {errors.recurrenceEndDate && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.recurrenceEndDate}</p>
+                  )}
                   <label 
                     htmlFor="recurrence-end-date"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 cursor-pointer pointer-events-none"

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Category, Service } from "../../services/api";
 import { X } from "lucide-react";
 import { apiService } from "../../services/api";
+import swal from "../../utils/swalHelper";
 
 interface CategoryModalProps {
   category?: Category;
@@ -19,6 +20,12 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
     sortOrder: 0,
   });
   const [services, setServices] = useState<Service[]>([]);
+
+  // Validation errors state
+  const [errors, setErrors] = useState<{
+    name?: string;
+    description?: string;
+  }>({});
 
   useEffect(() => {
     // Fetch services for dropdown
@@ -40,14 +47,71 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
         isActive: category.isActive,
         sortOrder: category.sortOrder,
       });
+    } else {
+      setFormData({
+        name: "",
+        description: "",
+        service: "",
+        isActive: true,
+        sortOrder: 0,
+      });
     }
+    setErrors({});
   }, [category]);
+
+  // Validate individual field
+  const validateField = (name: string, value: any): string | null => {
+    switch (name) {
+      case 'name':
+        if (!value || value.trim().length < 2) {
+          return 'Name must be at least 2 characters';
+        }
+        if (value.trim().length > 100) {
+          return 'Name must be less than 100 characters';
+        }
+        return null;
+      
+      case 'description':
+        if (!value || value.trim().length < 5) {
+          return 'Description must be at least 5 characters';
+        }
+        if (value.trim().length > 500) {
+          return 'Description must be less than 500 characters';
+        }
+        return null;
+      
+      default:
+        return null;
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Validate the field
+    const error = validateField(name, value);
+    setErrors({ ...errors, [name]: error || undefined });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.description) {
-      alert("Please fill in all required fields");
+    // Validate all fields
+    const validationErrors: any = {};
+    validationErrors.name = validateField('name', formData.name);
+    validationErrors.description = validateField('description', formData.description);
+
+    // Remove undefined values
+    Object.keys(validationErrors).forEach(key => {
+      if (!validationErrors[key]) delete validationErrors[key];
+    });
+
+    setErrors(validationErrors);
+
+    // Check if form is valid
+    if (Object.keys(validationErrors).length > 0) {
+      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
@@ -79,28 +143,40 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
           <form id="category-form" onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Name *
+              Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
+              name="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              onChange={handleInputChange}
+              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+              }`}
               required
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description *
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
+              name="description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={handleInputChange}
               rows={3}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+              }`}
               required
             />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
+            )}
           </div>
 
           <div>
@@ -108,8 +184,9 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
               Service
             </label>
             <select
+              name="service"
               value={formData.service}
-              onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+              onChange={handleInputChange}
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             >
               <option value="">Select a service</option>
@@ -127,6 +204,7 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
             </label>
             <input
               type="number"
+              name="sortOrder"
               value={formData.sortOrder}
               onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"

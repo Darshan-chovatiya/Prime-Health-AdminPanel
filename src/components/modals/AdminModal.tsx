@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Admin } from "../../services/api";
+import swal from "../../utils/swalHelper";
 
 interface AdminModalProps {
   admin?: Admin;
@@ -17,6 +18,13 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
     isActive: true,
   });
 
+  // Validation errors state
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+  }>({});
+
   useEffect(() => {
     if (admin) {
       setFormData({
@@ -26,19 +34,82 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
         role: admin.role,
         isActive: admin.isActive,
       });
+    } else {
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        role: "admin",
+        isActive: true,
+      });
     }
+    setErrors({});
   }, [admin]);
+
+  // Validate individual field
+  const validateField = (name: string, value: any): string | null => {
+    switch (name) {
+      case 'name':
+        if (!value || value.trim().length < 2) {
+          return 'Name must be at least 2 characters';
+        }
+        if (value.trim().length > 50) {
+          return 'Name must be less than 50 characters';
+        }
+        return null;
+      
+      case 'email':
+        if (!value || !value.trim()) {
+          return 'Email is required';
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value.trim())) {
+          return 'Please enter a valid email address';
+        }
+        return null;
+      
+      case 'password':
+        if (!admin && (!value || value.trim().length === 0)) {
+          return 'Password is required';
+        }
+        if (value && value.trim().length < 6) {
+          return 'Password must be at least 6 characters';
+        }
+        return null;
+      
+      default:
+        return null;
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Validate the field
+    const error = validateField(name, value);
+    setErrors({ ...errors, [name]: error || undefined });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email) {
-      alert("Please fill in all required fields");
-      return;
-    }
+    // Validate all fields
+    const validationErrors: any = {};
+    validationErrors.name = validateField('name', formData.name);
+    validationErrors.email = validateField('email', formData.email);
+    validationErrors.password = validateField('password', formData.password);
 
-    if (!admin && !formData.password) {
-      alert("Password is required for new admin");
+    // Remove undefined values
+    Object.keys(validationErrors).forEach(key => {
+      if (!validationErrors[key]) delete validationErrors[key];
+    });
+
+    setErrors(validationErrors);
+
+    // Check if form is valid
+    if (Object.keys(validationErrors).length > 0) {
+      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
@@ -72,42 +143,60 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
           <form id="admin-form" onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Name *
+              Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
+              name="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              onChange={handleInputChange}
+              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+              }`}
               required
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email *
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
+              name="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              onChange={handleInputChange}
+              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+              }`}
               required
             />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Password {!admin && '*'}
+              Password {!admin && <span className="text-red-500">*</span>}
             </label>
             <input
               type="password"
+              name="password"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              onChange={handleInputChange}
+              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+              }`}
               required={!admin}
               placeholder={admin ? "Leave blank to keep current password" : ""}
             />
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
+            )}
           </div>
 
           <div>
