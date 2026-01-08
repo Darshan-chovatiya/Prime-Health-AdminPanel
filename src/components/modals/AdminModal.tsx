@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Admin } from "../../services/api";
-import swal from "../../utils/swalHelper";
 import { EyeIcon, EyeCloseIcon } from "../../icons";
 
 interface AdminModalProps {

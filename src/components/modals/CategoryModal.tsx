@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Category, Service } from "../../services/api";
 import { X } from "lucide-react";
 import { apiService } from "../../services/api";
-import swal from "../../utils/swalHelper";
 
 interface CategoryModalProps {
   category?: Category;

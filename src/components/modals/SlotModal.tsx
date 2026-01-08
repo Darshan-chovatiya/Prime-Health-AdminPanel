@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Slot } from "../../services/api";
-import swal from "../../utils/swalHelper";
 
 interface SlotModalProps {
   slot?: Slot;

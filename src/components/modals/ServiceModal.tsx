@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Service } from "../../services/api";
 import { X } from "lucide-react";
-import swal from "../../utils/swalHelper";
 
 interface ServiceModalProps {
   service?: Service;
