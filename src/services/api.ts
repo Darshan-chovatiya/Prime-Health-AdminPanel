@@ -251,11 +251,12 @@ class ApiService {
           throw error;
         }
         // If it's a generic message, try to extract from the original error
-        if (error.originalError) {
-          const originalError = error.originalError;
+        const errorWithOriginal = error as any;
+        if (errorWithOriginal.originalError) {
+          const originalError = errorWithOriginal.originalError;
           // Check for validation errors array
           if (originalError?.errors && Array.isArray(originalError.errors)) {
-            const errorMessages = originalError.errors.map((err: any) => err.message || `${err.path}: ${err.message}`).join(', ');
+            const errorMessages = originalError.errors.map((err: any) => err.message || `${err.path || 'Field'}: Invalid value`).join(', ');
             throw new Error(errorMessages);
           }
           // Check for message in original error
