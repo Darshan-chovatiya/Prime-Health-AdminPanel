@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import apiService, { Service } from "../services/api";
 import swal from '../utils/swalHelper';
 import ServiceModal from "../components/modals/ServiceModal";
@@ -13,6 +13,7 @@ export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,6 +23,7 @@ export default function Services() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [viewingService, setViewingService] = useState<Service | null>(null);
+  const isInitialLoad = useRef(true);
 
   // Debounced values
   const debouncedStatusFilter = useDebounce(statusFilter, 300);
@@ -34,13 +36,21 @@ export default function Services() {
   }, [searchTerm, debouncedStatusFilter]);
 
   useEffect(() => {
-    fetchServices();
     fetchServiceStats();
+  }, []);
+
+  useEffect(() => {
+    fetchServices();
   }, [currentPage, searchTerm, debouncedStatusFilter, limit]);
 
   const fetchServices = async () => {
     try {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+        isInitialLoad.current = false;
+      } else {
+        setTableLoading(true);
+      }
       const response = await apiService.getServices({
         page: currentPage,
         limit: limit,
@@ -62,6 +72,7 @@ export default function Services() {
       });
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -248,7 +259,12 @@ export default function Services() {
             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
               <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">Services</h4>
             </div>
-            <div className="overflow-x-auto">
+            {tableLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            )}
+            <div className={`overflow-x-auto ${tableLoading ? 'opacity-50 pointer-events-none' : ''}`}>
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import apiService, { Admin } from "../services/api";
 import swal from '../utils/swalHelper';
 import AdminModal from "../components/modals/AdminModal";
@@ -12,6 +12,7 @@ export default function Admins() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
   const [roleFilter, setRoleFilter] = useState("all");
@@ -22,6 +23,7 @@ export default function Admins() {
   const [limit, setLimit] = useState(10);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+  const isInitialLoad = useRef(true);
 
   // Debounced values - only for filters since SearchInput handles search debouncing
   const debouncedRoleFilter = useDebounce(roleFilter, 300);
@@ -35,14 +37,22 @@ export default function Admins() {
   }, [searchTerm, debouncedRoleFilter, debouncedStatusFilter]);
 
   useEffect(() => {
-    fetchAdmins();
     fetchAdminStats();
+  }, []);
+
+  useEffect(() => {
+    fetchAdmins();
   }, [currentPage, searchTerm, debouncedRoleFilter, debouncedStatusFilter, limit]);
 
 
   const fetchAdmins = async () => {
     try {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+        isInitialLoad.current = false;
+      } else {
+        setTableLoading(true);
+      }
       const response = await apiService.getAdmins({
         page: currentPage,
         limit: limit,
@@ -61,6 +71,7 @@ export default function Admins() {
       swal.error('Error', 'Failed to load admins');
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -258,7 +269,12 @@ export default function Admins() {
             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
               <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">Admin Users</h4>
             </div>
-            <div className="overflow-x-auto">
+            {tableLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            )}
+            <div className={`overflow-x-auto ${tableLoading ? 'opacity-50 pointer-events-none' : ''}`}>
               <table className="w-full">
                 <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>

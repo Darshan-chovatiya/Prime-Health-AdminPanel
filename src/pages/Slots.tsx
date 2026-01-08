@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import apiService, { Slot } from "../services/api";
 import swal from '../utils/swalHelper';
 import SlotModal from "../components/modals/SlotModal";
@@ -12,6 +12,7 @@ export default function Slots() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [doctorFilter, setDoctorFilter] = useState("all");
@@ -22,6 +23,7 @@ export default function Slots() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
   const [doctors, setDoctors] = useState<any[]>([]);
+  const isInitialLoad = useRef(true);
 
   // Debounced values - only for filters since SearchInput handles search debouncing
   const debouncedStatusFilter = useDebounce(statusFilter, 300);
@@ -34,15 +36,26 @@ export default function Slots() {
     }
   }, [searchTerm, debouncedStatusFilter, debouncedDoctorFilter]);
 
+  // Initial load
   useEffect(() => {
-    fetchSlots();
     fetchSlotStats();
     fetchDoctors();
+  }, []);
+
+  // Fetch slots when filters/page change
+  useEffect(() => {
+    fetchSlots();
   }, [currentPage, searchTerm, debouncedStatusFilter, debouncedDoctorFilter, limit]);
 
   const fetchSlots = async () => {
     try {
-      setLoading(true);
+      // Use tableLoading for search/filter operations, loading only for initial mount
+      if (isInitialLoad.current) {
+        setLoading(true);
+        isInitialLoad.current = false;
+      } else {
+        setTableLoading(true);
+      }
       const response = await apiService.getSlots({
         page: currentPage,
         limit: limit,
@@ -65,6 +78,7 @@ export default function Slots() {
       setTotalPages(1);
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -298,7 +312,12 @@ export default function Slots() {
             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
               <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">Appointment Slots</h4>
             </div>
-            <div className="overflow-x-auto">
+            {tableLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            )}
+            <div className={`overflow-x-auto ${tableLoading ? 'opacity-50 pointer-events-none' : ''}`}>
               <table className="w-full">
                 <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import apiService, { Patient, Booking } from "../services/api";
 import swal from '../utils/swalHelper';
 import ActionButton from '../components/ui/ActionButton';
@@ -34,12 +34,14 @@ export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalDocs, setTotalDocs] = useState(0);
   const [limit, setLimit] = useState(10);
+  const isInitialLoad = useRef(true);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -113,13 +115,21 @@ export default function Patients() {
   }, [searchTerm, debouncedStatusFilter]);
 
   useEffect(() => {
-    fetchPatients();
     fetchPatientStats();
+  }, []);
+
+  useEffect(() => {
+    fetchPatients();
   }, [currentPage, searchTerm, debouncedStatusFilter, limit]);
 
   const fetchPatients = async () => {
     try {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+        isInitialLoad.current = false;
+      } else {
+        setTableLoading(true);
+      }
       const response = await apiService.getPatients({
         page: currentPage,
         limit: limit,
@@ -137,6 +147,7 @@ export default function Patients() {
       swal.error('Error', 'Failed to load patients');
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -1535,7 +1546,12 @@ export default function Patients() {
             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
               <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">Patient Records</h4>
             </div>
-            <div className="overflow-x-auto">
+            {tableLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            )}
+            <div className={`overflow-x-auto ${tableLoading ? 'opacity-50 pointer-events-none' : ''}`}>
               <table className="w-full">
                 <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>

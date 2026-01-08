@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import apiService, { Doctor } from "../services/api";
 import swal from '../utils/swalHelper';
 import DoctorModal from "../components/modals/DoctorModal";
@@ -34,6 +34,7 @@ export default function DoctorsLabs() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,14 +45,12 @@ export default function DoctorsLabs() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [specialties, setSpecialties] = useState<any[]>([]);
+  const isInitialLoad = useRef(true);
 
   // const [activeTab, setActiveTab] = useState<"doctors" | "labs">("doctors");
 
   useEffect(() => {
-    fetchDoctors();
     fetchDoctorStats();
-  }, [currentPage, searchTerm, specialtyFilter, statusFilter, limit]);
-  useEffect(() => {
     const fetchSpecialties = async () => {
       try {
         const response = await apiService.getCategoriesByService({
@@ -65,9 +64,18 @@ export default function DoctorsLabs() {
     fetchSpecialties();
   }, []);
 
+  useEffect(() => {
+    fetchDoctors();
+  }, [currentPage, searchTerm, specialtyFilter, statusFilter, limit]);
+
   const fetchDoctors = async () => {
     try {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+        isInitialLoad.current = false;
+      } else {
+        setTableLoading(true);
+      }
       const response = await apiService.getDoctors({
         page: currentPage,
         limit: limit,
@@ -86,6 +94,7 @@ export default function DoctorsLabs() {
       swal.error("Error", "Failed to load doctors");
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -356,7 +365,12 @@ export default function DoctorsLabs() {
                 Doctors
               </h4>
             </div>
-            <div className="overflow-x-auto">
+            {tableLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            )}
+            <div className={`overflow-x-auto ${tableLoading ? 'opacity-50 pointer-events-none' : ''}`}>
               <table className="w-full">
                 <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>

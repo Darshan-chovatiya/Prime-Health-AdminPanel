@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 interface SearchInputProps {
   placeholder?: string;
@@ -16,6 +16,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
   className = ""
 }) => {
   const [localValue, setLocalValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wasFocusedRef = useRef(false);
 
   // Update local value when prop value changes
   useEffect(() => {
@@ -26,6 +28,13 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const debouncedOnChange = useCallback(
     debounce((searchValue: string) => {
       onChange(searchValue);
+      // Maintain focus after debounced search completes if input was previously focused
+      if (inputRef.current && wasFocusedRef.current) {
+        // Use setTimeout to ensure focus happens after any re-renders
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      }
     }, debounceMs),
     [onChange, debounceMs]
   );
@@ -34,16 +43,35 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
+    // Track if input is focused when user types
+    wasFocusedRef.current = document.activeElement === inputRef.current;
     debouncedOnChange(newValue);
+  };
+
+  // Track focus state
+  const handleFocus = () => {
+    wasFocusedRef.current = true;
+  };
+
+  const handleBlur = () => {
+    // Don't immediately clear - wait a bit in case focus is being restored
+    setTimeout(() => {
+      if (document.activeElement !== inputRef.current) {
+        wasFocusedRef.current = false;
+      }
+    }, 100);
   };
 
   return (
     <div className={`relative flex-1 ${className}`}>
       <input
+        ref={inputRef}
         type="text"
         placeholder={placeholder}
         value={localValue}
         onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 pl-10 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
       />
       <svg 

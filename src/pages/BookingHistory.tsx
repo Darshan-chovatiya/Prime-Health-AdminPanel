@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import apiService, { Booking, Patient, Doctor } from "../services/api";
 import swal from '../utils/swalHelper';
 import ActionButton from '../components/ui/ActionButton';
@@ -10,6 +10,7 @@ export default function BookingHistory() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,15 +19,24 @@ export default function BookingHistory() {
   const [limit, setLimit] = useState(10);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const isInitialLoad = useRef(true);
+
+  useEffect(() => {
+    fetchBookingStats();
+  }, []);
 
   useEffect(() => {
     fetchBookings();
-    fetchBookingStats();
   }, [currentPage, searchTerm, statusFilter, limit]);
 
   const fetchBookings = async () => {
     try {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+        isInitialLoad.current = false;
+      } else {
+        setTableLoading(true);
+      }
       const response = await apiService.getBookings({
         page: currentPage,
         limit: limit,
@@ -44,6 +54,7 @@ export default function BookingHistory() {
       swal.error('Error', 'Failed to load bookings');
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -312,7 +323,12 @@ export default function BookingHistory() {
             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
               <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">Recent Bookings</h4>
             </div>
-            <div className="overflow-x-auto">
+            {tableLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            )}
+            <div className={`overflow-x-auto ${tableLoading ? 'opacity-50 pointer-events-none' : ''}`}>
               <table className="w-full">
                 <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>
