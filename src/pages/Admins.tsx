@@ -15,7 +15,6 @@ export default function Admins() {
   const [tableLoading, setTableLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
-  const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -26,7 +25,6 @@ export default function Admins() {
   const isInitialLoad = useRef(true);
 
   // Debounced values - only for filters since SearchInput handles search debouncing
-  const debouncedRoleFilter = useDebounce(roleFilter, 300);
   const debouncedStatusFilter = useDebounce(statusFilter, 300);
 
   // Reset to first page when filters change
@@ -34,7 +32,7 @@ export default function Admins() {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [searchTerm, debouncedRoleFilter, debouncedStatusFilter]);
+  }, [searchTerm, debouncedStatusFilter]);
 
   useEffect(() => {
     fetchAdminStats();
@@ -42,7 +40,7 @@ export default function Admins() {
 
   useEffect(() => {
     fetchAdmins();
-  }, [currentPage, searchTerm, debouncedRoleFilter, debouncedStatusFilter, limit]);
+  }, [currentPage, searchTerm, debouncedStatusFilter, limit]);
 
 
   const fetchAdmins = async () => {
@@ -57,7 +55,6 @@ export default function Admins() {
         page: currentPage,
         limit: limit,
         search: searchTerm,
-        role: debouncedRoleFilter === 'all' ? undefined : debouncedRoleFilter,
         status: debouncedStatusFilter === 'all' ? undefined : debouncedStatusFilter,
       });
       
@@ -164,7 +161,7 @@ export default function Admins() {
         
         <div className="space-y-6">
           {/* Admin Stats Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
               <div className="flex items-center justify-between">
                 <div>
@@ -200,22 +197,6 @@ export default function Admins() {
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Super Admins</p>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
-                    {stats?.superAdmins?.toLocaleString() || '0'}
-                  </p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/20">
-                  <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-              <div className="flex items-center justify-between">
-                <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Last Login</p>
                   <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                     {stats?.lastLogin ? new Date(stats.lastLogin).toLocaleString() : 'Never'}
@@ -238,17 +219,6 @@ export default function Admins() {
                 value={searchTerm}
                 onChange={setSearchTerm}
                 debounceMs={500}
-              />
-              <FilterDropdown
-                options={[
-                  { value: 'all', label: 'All Roles' },
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'super_admin', label: 'Super Admin' },
-                ]}
-                value={roleFilter}
-                onChange={setRoleFilter}
-                placeholder="All Roles"
-                className="w-full sm:w-auto"
               />
               <FilterDropdown
                 options={[
@@ -279,7 +249,6 @@ export default function Admins() {
                 <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Admin</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Role</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Last Login</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
@@ -325,15 +294,6 @@ export default function Admins() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                            admin.role === 'super_admin' 
-                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
-                          }`}>
-                            {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
                           <span 
                             className={`inline-flex rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors duration-200 hover:opacity-80 ${
                               admin.isActive 
@@ -365,7 +325,7 @@ export default function Admins() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                         No admins found
                       </td>
                     </tr>

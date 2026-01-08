@@ -14,7 +14,7 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
     name: "",
     email: "",
     password: "",
-    role: "admin" as "admin" | "super_admin",
+    role: "admin" as "admin" | "super_admin", // Always default to admin, managed only in frontend
     isActive: true,
   });
 
@@ -33,7 +33,7 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
         name: admin.name,
         email: admin.email,
         password: "",
-        role: admin.role,
+        role: "admin", // Always set to admin, regardless of admin.role
         isActive: admin.isActive,
       });
     } else {
@@ -41,7 +41,7 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
         name: "",
         email: "",
         password: "",
-        role: "admin",
+        role: "admin", // Always default to admin
         isActive: true,
       });
     }
@@ -123,9 +123,10 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
       return;
     }
 
+    // Always set role to "admin" - managed only in frontend
     const submitData = admin 
-      ? { id: admin._id, ...formData }
-      : formData;
+      ? { id: admin._id, ...formData, role: "admin" }
+      : { ...formData, role: "admin" };
 
     onSubmit(submitData);
   };
@@ -220,20 +221,6 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
             {errors.password && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Role
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as "admin" | "super_admin" })}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            >
-              <option value="admin">Admin</option>
-              <option value="super_admin">Super Admin</option>
-            </select>
           </div>
 
           <div className="flex items-center">
