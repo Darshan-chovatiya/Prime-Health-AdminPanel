@@ -483,7 +483,7 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
   }
 
   // Services
-  async getServices(params: PaginationParams & { status?: string; category?: string } = {}): Promise<ApiResponse<{ docs: Service[], totalDocs: number, limit: number, page: number }>> {
+  async getServices(params: PaginationParams & { status?: string; category?: string } = {}): Promise<ApiResponse<{ docs: Service[], totalDocs: number, totalPages: number, limit: number, page: number }>> {
     return this.request('/services', {
       body: JSON.stringify(params),
     });
