@@ -278,7 +278,7 @@ export default function BookingHistory() {
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No Show</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Missed Appointments</p>
                   <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
                     {stats?.noShowBookings?.toLocaleString() || '0'}
                   </p>
@@ -307,7 +307,7 @@ export default function BookingHistory() {
                   { value: 'confirmed', label: 'Confirmed' },
                   { value: 'completed', label: 'Completed' },
                   { value: 'cancelled', label: 'Cancelled' },
-                  { value: 'no-show', label: 'No Show' },
+                  { value: 'no-show', label: 'Missed Appointments' },
                   { value: 'rescheduled', label: 'Rescheduled' },
                 ]}
                 value={statusFilter}
