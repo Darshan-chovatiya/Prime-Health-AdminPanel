@@ -272,15 +272,12 @@ export default function Patients() {
   // Validate individual field
   const validateField = (name: string, value: any, fieldType?: 'address' | 'emergencyContact'): string | null => {
     if (fieldType === 'address') {
-      // Address fields are optional, but if any is provided, all must be non-empty
-      const hasAnyField = formData.address.street || formData.address.city || formData.address.state || formData.address.zipCode || formData.address.country;
-      if (hasAnyField) {
-        if (name === 'street' && !value?.trim()) return 'Street is required if address is provided';
-        if (name === 'city' && !value?.trim()) return 'City is required if address is provided';
-        if (name === 'state' && !value?.trim()) return 'State is required if address is provided';
-        if (name === 'zipCode' && !value?.trim()) return 'Zip code is required if address is provided';
-        if (name === 'country' && !value?.trim()) return 'Country is required if address is provided';
-      }
+      // Address fields are required (except zipCode which is optional)
+      if (name === 'street' && !value?.trim()) return 'Street is required';
+      if (name === 'city' && !value?.trim()) return 'City is required';
+      if (name === 'state' && !value?.trim()) return 'State is required';
+      // zipCode is optional, no validation needed
+      if (name === 'country' && !value?.trim()) return 'Country is required';
       return null;
     }
 
@@ -450,7 +447,7 @@ export default function Patients() {
   // Check if all required fields are filled (for button disable state)
   const isFormValid = (): boolean => {
     if (showCreateModal) {
-      // For create: check all required fields including email
+      // For create: check all required fields including email and address
       return !!(
         formData.name?.trim() &&
         formData.name.trim().length >= 2 &&
@@ -460,13 +457,21 @@ export default function Patients() {
         /^[0-9]{10}$/.test(formData.mobileNo) &&
         formData.dateOfBirth &&
         formData.gender &&
-        ['male', 'female', 'other'].includes(formData.gender)
+        ['male', 'female', 'other'].includes(formData.gender) &&
+        formData.address.street?.trim() &&
+        formData.address.city?.trim() &&
+        formData.address.state?.trim() &&
+        formData.address.country?.trim()
       );
     } else {
-      // For update: name is required, others can be optional
+      // For update: name and address are required
       return !!(
         formData.name?.trim() &&
-        formData.name.trim().length >= 2
+        formData.name.trim().length >= 2 &&
+        formData.address.street?.trim() &&
+        formData.address.city?.trim() &&
+        formData.address.state?.trim() &&
+        formData.address.country?.trim()
       );
     }
   };
@@ -834,11 +839,12 @@ export default function Patients() {
               <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-3">Address</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Street</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Street <span className="text-red-500">*</span></label>
                   <input 
                     name="street" 
                     value={formData.address.street} 
                     onChange={handleAddressChange} 
+                    required
                     className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
                       errors.address?.street ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
                     }`}
@@ -849,11 +855,12 @@ export default function Patients() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City <span className="text-red-500">*</span></label>
                   <input 
                     name="city" 
                     value={formData.address.city} 
                     onChange={handleAddressChange} 
+                    required
                     className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
                       errors.address?.city ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
                     }`}
@@ -864,11 +871,12 @@ export default function Patients() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State <span className="text-red-500">*</span></label>
                   <input 
                     name="state" 
                     value={formData.address.state} 
                     onChange={handleAddressChange} 
+                    required
                     className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
                       errors.address?.state ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
                     }`}
@@ -894,11 +902,12 @@ export default function Patients() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
                   <input 
                     name="country" 
                     value={formData.address.country} 
                     onChange={handleAddressChange} 
+                    required
                     className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
                       errors.address?.country ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
                     }`}
