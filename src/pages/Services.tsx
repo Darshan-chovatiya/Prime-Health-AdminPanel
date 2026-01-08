@@ -141,12 +141,69 @@ export default function Services() {
 
   const handleToggleStatus = async (serviceId: string, currentStatus: boolean) => {
     try {
-      await apiService.toggleServiceStatus(serviceId, !currentStatus);
-      swal.success('Success!', `Service ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
-      fetchServices();
-      fetchServiceStats();
+      const response = await apiService.toggleServiceStatus(serviceId, !currentStatus);
+      
+      // Check if response indicates success
+      if (response.status === 200 && response.data) {
+        swal.success('Success!', `Service ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
+        fetchServices();
+        fetchServiceStats();
+      } else {
+        // If status is not 200 or no data, show error message from backend
+        const errorMessage = response.message || 'Failed to update service status. Please try again.';
+        swal.error('Error', errorMessage);
+      }
     } catch (error: any) {
-      swal.error('Error', error.message || 'Failed to update service status');
+      // Extract error message from various possible formats
+      let errorMessage = 'Failed to update service status. Please try again.';
+      
+      // The API service throws an Error with the message, so check error.message first
+      if (error?.message) {
+        // Only use the message if it's not a generic "Request failed"
+        if (error.message !== 'Request failed' && !error.message.includes('Request failed with status')) {
+          errorMessage = error.message;
+        } else {
+          // If it's a generic message, check for original error data
+          if (error?.originalError) {
+            const originalError = error.originalError;
+            // Check for validation errors array (from Joi validator)
+            if (originalError.errors && Array.isArray(originalError.errors)) {
+              errorMessage = originalError.errors.map((err: any) => err.message || `${err.path || 'Field'}: Invalid value`).join(', ');
+            }
+            // Check for message in original error
+            else if (originalError.message) {
+              errorMessage = originalError.message;
+            }
+          }
+          
+          // If still no specific message, provide helpful fallback
+          if (errorMessage === 'Failed to update service status. Please try again.') {
+            errorMessage = 'Unable to update service status. The service may be assigned to categories. Please remove it from all categories first.';
+          }
+        }
+      } 
+      // Check for response object with message
+      else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } 
+      else if (error?.response?.message) {
+        errorMessage = error.response.message;
+      }
+      // Check if error is a string
+      else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      // Check if error has a data property with message
+      else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      }
+      // Check for validation errors array
+      else if (error?.errors && Array.isArray(error.errors)) {
+        errorMessage = error.errors.map((err: any) => err.message || err).join(', ');
+      }
+      
+      // Display the error message (not the error object)
+      swal.error('Error', errorMessage);
     }
   };
 

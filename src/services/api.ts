@@ -218,15 +218,22 @@ class ApiService {
       const data = await response.json();
       
       if (!response.ok) {
-        // Handle validation errors from backend
+        // Handle validation errors from backend (Joi validation errors)
         if (data.errors && Array.isArray(data.errors)) {
-          const errorMessages = data.errors.map((err: any) => err.message).join(', ');
+          const errorMessages = data.errors.map((err: any) => {
+            // Handle both { message: string } and { path: string, message: string } formats
+            return err.message || `${err.path || 'Field'}: ${err.message || 'Invalid value'}`;
+          }).join(', ');
           throw new Error(errorMessages);
         }
         // Extract error message from backend response
         // Backend returns: { status: number, message: string, data: any }
-        const errorMessage = data.message || data.Message || 'Request failed';
-        throw new Error(errorMessage);
+        const errorMessage = data.message || data.Message || `Request failed with status ${response.status}`;
+        const error = new Error(errorMessage);
+        // Store original error data for debugging
+        (error as any).originalError = data;
+        (error as any).statusCode = response.status;
+        throw error;
       }
       
       // Check if response indicates failure even with 200 status
@@ -239,6 +246,23 @@ class ApiService {
       console.error('API Request failed:', error);
       // If it's already an Error object with message, re-throw it
       if (error instanceof Error) {
+        // Make sure the error message is not generic "Request failed"
+        if (error.message && error.message !== 'Request failed' && !error.message.includes('Request failed with status')) {
+          throw error;
+        }
+        // If it's a generic message, try to extract from the original error
+        if (error.originalError) {
+          const originalError = error.originalError;
+          // Check for validation errors array
+          if (originalError?.errors && Array.isArray(originalError.errors)) {
+            const errorMessages = originalError.errors.map((err: any) => err.message || `${err.path}: ${err.message}`).join(', ');
+            throw new Error(errorMessages);
+          }
+          // Check for message in original error
+          if (originalError?.message) {
+            throw new Error(originalError.message);
+          }
+        }
         throw error;
       }
       // Otherwise wrap it in an Error
