@@ -91,25 +91,35 @@ export default function Categories() {
 
   const handleCreateCategory = async (categoryData: any) => {
     try {
-      await apiService.createCategory(categoryData);
-      swal.success('Success!', 'Category created successfully.');
-      setShowCreateModal(false);
-      fetchCategories();
-      fetchCategoryStats();
+      const response = await apiService.createCategory(categoryData);
+      if (response.status === 200 || response.status === 201) {
+        swal.success('Success!', 'Category created successfully.');
+        setShowCreateModal(false);
+        fetchCategories();
+        fetchCategoryStats();
+      } else {
+        throw new Error(response.message || 'Failed to create category');
+      }
     } catch (error: any) {
-      swal.error('Error', error.message || 'Failed to create category');
+      // Re-throw error so CategoryModal can display it inline
+      throw error;
     }
   };
 
   const handleUpdateCategory = async (categoryData: any) => {
     try {
-      await apiService.updateCategory(categoryData);
-      swal.success('Success!', 'Category updated successfully.');
-      setEditingCategory(null);
-      fetchCategories();
-      fetchCategoryStats();
+      const response = await apiService.updateCategory(categoryData);
+      if (response.status === 200 || response.status === 201) {
+        swal.success('Success!', 'Category updated successfully.');
+        setEditingCategory(null);
+        fetchCategories();
+        fetchCategoryStats();
+      } else {
+        throw new Error(response.message || 'Failed to update category');
+      }
     } catch (error: any) {
-      swal.error('Error', error.message || 'Failed to update category');
+      // Re-throw error so CategoryModal can display it inline
+      throw error;
     }
   };
 

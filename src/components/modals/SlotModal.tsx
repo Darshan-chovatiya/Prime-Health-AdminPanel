@@ -186,6 +186,18 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
     setErrors({ ...errors, recurrenceEndDate: error || undefined });
   };
 
+  // Check if form is valid
+  const isFormValid = (): boolean => {
+    const doctorIdError = validateField('doctorId', formData.doctorId);
+    const startTimeError = validateField('startTime', formData.startTime);
+    const endTimeError = validateField('endTime', formData.endTime);
+    const recurrenceEndDateError = formData.isRecurring 
+      ? validateField('recurrenceEndDate', formData.recurrenceDetails.endDate)
+      : null;
+    
+    return !doctorIdError && !startTimeError && !endTimeError && !recurrenceEndDateError;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -207,7 +219,6 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
 
     // Check if form is valid
     if (Object.keys(validationErrors).length > 0) {
-      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
@@ -438,7 +449,12 @@ export default function SlotModal({ slot, doctors, onClose, onSubmit, title }: S
             <button
               type="submit"
               form="slot-form"
-              className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              disabled={!isFormValid()}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                isFormValid()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+              }`}
             >
               {slot ? 'Update' : 'Create'}
             </button>

@@ -53,7 +53,10 @@ export default function ServiceModal({ service, onClose, onSubmit, title }: Serv
         return null;
       
       case 'description':
-        if (value && value.trim().length > 500) {
+        if (!value || value.trim().length === 0) {
+          return 'Description is required';
+        }
+        if (value.trim().length > 500) {
           return 'Description must be less than 500 characters';
         }
         return null;
@@ -70,6 +73,14 @@ export default function ServiceModal({ service, onClose, onSubmit, title }: Serv
     // Validate the field
     const error = validateField(name, value);
     setErrors({ ...errors, [name]: error || undefined });
+  };
+
+  // Check if form is valid
+  const isFormValid = (): boolean => {
+    const nameError = validateField('name', formData.name);
+    const descriptionError = validateField('description', formData.description);
+    
+    return !nameError && !descriptionError;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -89,7 +100,6 @@ export default function ServiceModal({ service, onClose, onSubmit, title }: Serv
 
     // Check if form is valid
     if (Object.keys(validationErrors).length > 0) {
-      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
@@ -140,7 +150,7 @@ export default function ServiceModal({ service, onClose, onSubmit, title }: Serv
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
               name="description"
@@ -150,6 +160,7 @@ export default function ServiceModal({ service, onClose, onSubmit, title }: Serv
               className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
                 errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
               }`}
+              required
             />
             {errors.description && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
@@ -184,7 +195,12 @@ export default function ServiceModal({ service, onClose, onSubmit, title }: Serv
             <button
               type="submit"
               form="service-form"
-              className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              disabled={!isFormValid()}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                isFormValid()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+              }`}
             >
               {service ? 'Update' : 'Create'}
             </button>

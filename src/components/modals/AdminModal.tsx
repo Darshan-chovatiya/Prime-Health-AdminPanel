@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Admin } from "../../services/api";
 import swal from "../../utils/swalHelper";
+import { EyeIcon, EyeCloseIcon } from "../../icons";
 
 interface AdminModalProps {
   admin?: Admin;
@@ -17,6 +18,8 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
     role: "admin" as "admin" | "super_admin",
     isActive: true,
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   // Validation errors state
   const [errors, setErrors] = useState<{
@@ -91,6 +94,15 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
     setErrors({ ...errors, [name]: error || undefined });
   };
 
+  // Check if form is valid
+  const isFormValid = (): boolean => {
+    const nameError = validateField('name', formData.name);
+    const emailError = validateField('email', formData.email);
+    const passwordError = validateField('password', formData.password);
+    
+    return !nameError && !emailError && !passwordError;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -109,7 +121,6 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
 
     // Check if form is valid
     if (Object.keys(validationErrors).length > 0) {
-      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
@@ -183,17 +194,30 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Password {!admin && <span className="text-red-500">*</span>}
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
-                errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
-              }`}
-              required={!admin}
-              placeholder={admin ? "Leave blank to keep current password" : ""}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 pr-10 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+                }`}
+                required={!admin}
+                placeholder={admin ? "Leave blank to keep current password" : ""}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                {showPassword ? (
+                  <EyeIcon className="h-5 w-5 fill-current" />
+                ) : (
+                  <EyeCloseIcon className="h-5 w-5 fill-current" />
+                )}
+              </button>
+            </div>
             {errors.password && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
             )}
@@ -241,7 +265,12 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
             <button
               type="submit"
               form="admin-form"
-              className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              disabled={!isFormValid()}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                isFormValid()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+              }`}
             >
               {admin ? 'Update' : 'Create'}
             </button>

@@ -25,6 +25,8 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
   const [errors, setErrors] = useState<{
     name?: string;
     description?: string;
+    service?: string;
+    general?: string;
   }>({});
 
   useEffect(() => {
@@ -79,11 +81,17 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
         return null;
       
       case 'description':
-        if (!value || value.trim().length < 5) {
-          return 'Description must be at least 5 characters';
+        if (!value || value.trim().length < 10) {
+          return 'Description must be at least 10 characters';
         }
         if (value.trim().length > 500) {
           return 'Description must be less than 500 characters';
+        }
+        return null;
+      
+      case 'service':
+        if (!value || value.trim().length === 0) {
+          return 'Service is required';
         }
         return null;
       
@@ -101,13 +109,26 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
     setErrors({ ...errors, [name]: error || undefined });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if form is valid
+  const isFormValid = (): boolean => {
+    const nameError = validateField('name', formData.name);
+    const descriptionError = validateField('description', formData.description);
+    const serviceError = validateField('service', formData.service);
+    
+    return !nameError && !descriptionError && !serviceError;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setErrors({});
     
     // Validate all fields
     const validationErrors: any = {};
     validationErrors.name = validateField('name', formData.name);
     validationErrors.description = validateField('description', formData.description);
+    validationErrors.service = validateField('service', formData.service);
 
     // Remove undefined values
     Object.keys(validationErrors).forEach(key => {
@@ -118,7 +139,6 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
 
     // Check if form is valid
     if (Object.keys(validationErrors).length > 0) {
-      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 
@@ -126,7 +146,23 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
       ? { id: category._id, ...formData }
       : formData;
 
-    onSubmit(submitData);
+    try {
+      await onSubmit(submitData);
+    } catch (error: any) {
+      // Handle backend errors inline
+      const errorMessage = error.message || error.response?.data?.message || 'Failed to save category. Please try again.';
+      
+      // Try to map backend errors to specific fields
+      if (errorMessage.toLowerCase().includes('name')) {
+        setErrors(prev => ({ ...prev, name: errorMessage }));
+      } else if (errorMessage.toLowerCase().includes('description')) {
+        setErrors(prev => ({ ...prev, description: errorMessage }));
+      } else if (errorMessage.toLowerCase().includes('service')) {
+        setErrors(prev => ({ ...prev, service: errorMessage }));
+      } else {
+        setErrors(prev => ({ ...prev, general: errorMessage }));
+      }
+    }
   };
 
   return (
@@ -147,6 +183,11 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.general}</p>
+            </div>
+          )}
           <form id="category-form" onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -188,13 +229,16 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Service
+              Service <span className="text-red-500">*</span>
             </label>
             <select
               name="service"
               value={formData.service}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                errors.service ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+              }`}
+              required
             >
               <option value="">Select a service</option>
               {services.map((service) => (
@@ -203,6 +247,9 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
                 </option>
               ))}
             </select>
+            {errors.service && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.service}</p>
+            )}
           </div>
 
           <div>
@@ -247,7 +294,12 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
             <button
               type="submit"
               form="category-form"
-              className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              disabled={!isFormValid()}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                isFormValid()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+              }`}
             >
               {category ? 'Update' : 'Create'}
             </button>

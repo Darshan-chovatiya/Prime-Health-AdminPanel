@@ -12,23 +12,17 @@ export default function BookingHistory() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [doctorFilter, setDoctorFilter] = useState("all");
-  const [patientFilter, setPatientFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalDocs, setTotalDocs] = useState(0);
   const [limit, setLimit] = useState(10);
-  const [doctors, setDoctors] = useState<any[]>([]);
-  const [patients, setPatients] = useState<any[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchBookings();
     fetchBookingStats();
-    fetchDoctors();
-    fetchPatients();
-  }, [currentPage, searchTerm, statusFilter, doctorFilter, patientFilter, limit]);
+  }, [currentPage, searchTerm, statusFilter, limit]);
 
   const fetchBookings = async () => {
     try {
@@ -38,8 +32,6 @@ export default function BookingHistory() {
         limit: limit,
         search: searchTerm,
         status: statusFilter === 'all' ? undefined : statusFilter,
-        doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
-        patientId: patientFilter === 'all' ? undefined : patientFilter,
       });
       
       if (response.data && response.data.docs) {
@@ -64,27 +56,6 @@ export default function BookingHistory() {
     }
   };
 
-  const fetchDoctors = async () => {
-    try {
-      const response = await apiService.getDoctors({ limit: 100 });
-      if (response.data && response.data.docs) {
-        setDoctors(response.data.docs);
-      }
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
-    }
-  };
-
-  const fetchPatients = async () => {
-    try {
-      const response = await apiService.getPatients({ limit: 100 });
-      if (response.data && response.data.docs) {
-        setPatients(response.data.docs);
-      }
-    } catch (error) {
-      console.error('Error fetching patients:', error);
-    }
-  };
 
   const handleCancelBooking = async (bookingId: string, patientName: string) => {
     const { value: reason } = await swal.fire({
@@ -159,7 +130,6 @@ export default function BookingHistory() {
     try {
       const blob = await apiService.exportBookings({
         status: statusFilter === 'all' ? undefined : statusFilter,
-        doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
       });
       
       const url = window.URL.createObjectURL(blob);
@@ -189,7 +159,6 @@ export default function BookingHistory() {
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
         status: statusFilter === 'all' ? undefined : statusFilter,
-        doctorId: doctorFilter === 'all' ? undefined : doctorFilter,
       });
 
       // Create download link with Excel extension
@@ -335,32 +304,6 @@ export default function BookingHistory() {
                 placeholder="All Status"
                 className="w-full sm:w-auto"
               />
-              <FilterDropdown
-                options={[
-                  { value: 'all', label: 'All Doctors' },
-                  ...doctors.map((doctor) => ({
-                    value: doctor._id,
-                    label: `Dr. ${doctor.name}`,
-                  })),
-                ]}
-                value={doctorFilter}
-                onChange={setDoctorFilter}
-                placeholder="All Doctors"
-                className="w-full sm:w-auto"
-              />
-              <FilterDropdown
-                options={[
-                  { value: 'all', label: 'All Patients' },
-                  ...patients.map((patient) => ({
-                    value: patient._id,
-                    label: patient.name,
-                  })),
-                ]}
-                value={patientFilter}
-                onChange={setPatientFilter}
-                placeholder="All Patients"
-                className="w-full sm:w-auto"
-              />
             </div>
           </div>
 
@@ -388,11 +331,11 @@ export default function BookingHistory() {
                       // Handle populated data from backend
                       const patient: Patient | undefined = typeof booking.patientId === 'object' && booking.patientId !== null 
                         ? booking.patientId as Patient 
-                        : patients.find(p => p._id === booking.patientId);
+                        : undefined;
                       
                       const doctor: Doctor | undefined = typeof booking.doctorId === 'object' && booking.doctorId !== null
                         ? booking.doctorId as Doctor
-                        : doctors.find(d => d._id === booking.doctorId);
+                        : undefined;
                       
                       const service = typeof booking.serviceId === 'object' && booking.serviceId !== null
                         ? booking.serviceId

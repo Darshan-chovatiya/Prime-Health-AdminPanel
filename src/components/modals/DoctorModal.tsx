@@ -360,7 +360,6 @@ export default function DoctorModal({
 
     // Check if form is valid
     if (Object.keys(validationErrors).length > 0) {
-      swal.error('Validation Error', 'Please fix the errors in the form before submitting');
       return;
     }
 

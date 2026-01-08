@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, UserCircle, Mail, Lock, Calendar, User } from "lucide-react";
+import { Eye, EyeOff, UserCircle, Mail, Lock, User } from "lucide-react";
 import swal from '../utils/swalHelper';
 import Label from "../components/form/Label";
 import Input from "../components/form/input/InputField";
 import Form from "../components/form/Form";
 import api from "../services/api"; // Adjust path to your API class instance
+import { useAuth } from "../context/AuthContext";
 
 interface UserProfile {
   email: string;
@@ -20,6 +21,7 @@ interface PasswordForm {
 }
 
 export default function UserProfiles() {
+  const { updateUser } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile>({
     email: "",
     name: "",
@@ -93,20 +95,12 @@ export default function UserProfiles() {
 
   // Password validation
   const validatePassword = (password: string) => {
-    const minLength = password.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const minLength = password.length >= 6;
     
     return {
-      isValid: minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
+      isValid: minLength,
       requirements: {
-        minLength,
-        hasUpperCase,
-        hasLowerCase,
-        hasNumbers,
-        hasSpecialChar
+        minLength
       }
     };
   };
@@ -145,11 +139,17 @@ export default function UserProfiles() {
         email: profileForm.email
       });
       if (response.status === 200) {
+        const updatedAdmin = response.data.admin;
         setUserProfile(prev => ({
           ...prev,
-          name: response.data.admin.name,
-          email: response.data.admin.email
+          name: updatedAdmin.name,
+          email: updatedAdmin.email
         }));
+        // Update AuthContext and localStorage to reflect changes in header
+        updateUser({
+          name: updatedAdmin.name,
+          email: updatedAdmin.email
+        });
         // setSuccess(prev => ({ ...prev, profile: true }));
         swal.success('Success', 'Profile updated successfully!');
         setTimeout(() => {
@@ -242,10 +242,6 @@ export default function UserProfiles() {
             <div className="flex items-center gap-4 mt-2">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
                 {userProfile.role}
-              </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Member since {userProfile.joinDate ? new Date(userProfile.joinDate).toLocaleDateString() : 'N/A'}
               </span>
             </div>
           </div>
@@ -463,25 +459,9 @@ export default function UserProfiles() {
                     Password Requirements:
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
-                    <div className={`flex items-center gap-2 text-sm ${passwordForm.newPassword.length >= 8 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                      <div className={`w-2 h-2 rounded-full ${passwordForm.newPassword.length >= 8 ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                      At least 8 characters
-                    </div>
-                    <div className={`flex items-center gap-2 text-sm ${/[A-Z]/.test(passwordForm.newPassword) ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                      <div className={`w-2 h-2 rounded-full ${/[A-Z]/.test(passwordForm.newPassword) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                      One uppercase letter
-                    </div>
-                    <div className={`flex items-center gap-2 text-sm ${/[a-z]/.test(passwordForm.newPassword) ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                      <div className={`w-2 h-2 rounded-full ${/[a-z]/.test(passwordForm.newPassword) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                      One lowercase letter
-                    </div>
-                    <div className={`flex items-center gap-2 text-sm ${/\d/.test(passwordForm.newPassword) ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                      <div className={`w-2 h-2 rounded-full ${/\d/.test(passwordForm.newPassword) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                      One number
-                    </div>
-                    <div className={`flex items-center gap-2 text-sm ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.newPassword) ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                      <div className={`w-2 h-2 rounded-full ${/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.newPassword) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                      One special character
+                    <div className={`flex items-center gap-2 text-sm ${passwordForm.newPassword.length >= 6 ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                      <div className={`w-2 h-2 rounded-full ${passwordForm.newPassword.length >= 6 ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                      At least 6 characters
                     </div>
                   </div>
                 </div>
