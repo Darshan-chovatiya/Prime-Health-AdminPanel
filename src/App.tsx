@@ -8,6 +8,7 @@ import Home from "./pages/Dashboard/Home";
 import Admins from "./pages/Admins";
 import Patients from "./pages/Patients";
 import Categories from "./pages/Categories";
+import Services from "./pages/Services";
 import DoctorsLabs from "./pages/DoctorsLabs";
 import Slots from "./pages/Slots";
 import BookingHistory from "./pages/BookingHistory";
@@ -67,6 +68,11 @@ function AppRoutes() {
           <Route path="/categories" element={
             <ProtectedRoute>
               <Categories />
+            </ProtectedRoute>
+          } />
+          <Route path="/services" element={
+            <ProtectedRoute>
+              <Services />
             </ProtectedRoute>
           } />
           <Route path="/doctors-labs" element={

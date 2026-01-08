@@ -1,5 +1,5 @@
-// export const API_BASE_URL = 'http://localhost:3300/api/admin';
-export const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
+export const API_BASE_URL = 'http://localhost:3300/api/admin';
+// export const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
 // export const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
 
 // Types
@@ -82,8 +82,9 @@ export interface Category {
 export interface Service {
   _id: string;
   name: string;
-  category: string;
+  category?: string | null;
   description: string;
+  isActive?: boolean;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -222,13 +223,26 @@ class ApiService {
           const errorMessages = data.errors.map((err: any) => err.message).join(', ');
           throw new Error(errorMessages);
         }
-        throw new Error(data.message || 'Request failed');
+        // Extract error message from backend response
+        // Backend returns: { status: number, message: string, data: any }
+        const errorMessage = data.message || data.Message || 'Request failed';
+        throw new Error(errorMessage);
+      }
+      
+      // Check if response indicates failure even with 200 status
+      if (data.status && data.status !== 200 && data.message) {
+        throw new Error(data.message);
       }
       
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('API Request failed:', error);
-      throw error;
+      // If it's already an Error object with message, re-throw it
+      if (error instanceof Error) {
+        throw error;
+      }
+      // Otherwise wrap it in an Error
+      throw new Error(error.message || 'Request failed');
     }
   }
 
@@ -497,6 +511,31 @@ async getProfile(id?: string): Promise<ApiResponse<{ admin: Admin }>> {
     return this.request('/services/delete', {
       body: JSON.stringify({ id }),
     });
+  }
+
+  async toggleServiceStatus(id: string, isActive: boolean): Promise<ApiResponse<{ service: Service }>> {
+    return this.request('/services/update', {
+      body: JSON.stringify({ id, isActive }),
+    });
+  }
+
+  async getServiceStats(): Promise<ApiResponse> {
+    try {
+      return this.request('/services/stats', {
+        method: 'GET',
+      });
+    } catch (error) {
+      // If stats endpoint doesn't exist, return empty stats
+      return {
+        status: 200,
+        message: 'Stats calculated from services',
+        data: {
+          totalServices: 0,
+          activeServices: 0,
+          inactiveServices: 0,
+        }
+      };
+    }
   }
 
   // Doctors

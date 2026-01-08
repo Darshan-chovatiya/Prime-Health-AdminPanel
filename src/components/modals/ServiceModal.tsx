@@ -1,25 +1,21 @@
 import { useState, useEffect } from "react";
-import { Category, Service } from "../../services/api";
+import { Service } from "../../services/api";
 import { X } from "lucide-react";
-import { apiService } from "../../services/api";
 import swal from "../../utils/swalHelper";
 
-interface CategoryModalProps {
-  category?: Category;
+interface ServiceModalProps {
+  service?: Service;
   onClose: () => void;
-  onSubmit: (categoryData: any) => void;
+  onSubmit: (serviceData: any) => void;
   title: string;
 }
 
-export default function CategoryModal({ category, onClose, onSubmit, title }: CategoryModalProps) {
+export default function ServiceModal({ service, onClose, onSubmit, title }: ServiceModalProps) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    service: "", // Changed from services array to single service ID
     isActive: true,
-    sortOrder: 0,
   });
-  const [services, setServices] = useState<Service[]>([]);
 
   // Validation errors state
   const [errors, setErrors] = useState<{
@@ -28,43 +24,21 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
   }>({});
 
   useEffect(() => {
-    // Fetch services for dropdown - only active services
-    const fetchServices = async () => {
-      try {
-        const response = await apiService.getServices({ 
-          limit: 100,
-          status: 'active'
-        });
-        // Filter to ensure only active services are shown (client-side backup)
-        const activeServices = response.data.docs.filter((service: Service) => 
-          service.isActive !== false
-        );
-        setServices(activeServices);
-      } catch (error) {
-        console.error('Failed to fetch services:', error);
-      }
-    };
-    fetchServices();
-
-    if (category) {
+    if (service) {
       setFormData({
-        name: category.name,
-        description: category.description,
-        service: typeof category.service === 'object' ? category.service._id : category.service || "", 
-        isActive: category.isActive,
-        sortOrder: category.sortOrder,
+        name: service.name,
+        description: service.description || "",
+        isActive: service.isActive !== undefined ? service.isActive : true,
       });
     } else {
       setFormData({
         name: "",
         description: "",
-        service: "",
         isActive: true,
-        sortOrder: 0,
       });
     }
     setErrors({});
-  }, [category]);
+  }, [service]);
 
   // Validate individual field
   const validateField = (name: string, value: any): string | null => {
@@ -79,10 +53,7 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
         return null;
       
       case 'description':
-        if (!value || value.trim().length < 5) {
-          return 'Description must be at least 5 characters';
-        }
-        if (value.trim().length > 500) {
+        if (value && value.trim().length > 500) {
           return 'Description must be less than 500 characters';
         }
         return null;
@@ -122,8 +93,8 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
       return;
     }
 
-    const submitData = category 
-      ? { id: category._id, ...formData }
+    const submitData = service 
+      ? { id: service._id, ...formData }
       : formData;
 
     onSubmit(submitData);
@@ -147,7 +118,7 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          <form id="category-form" onSubmit={handleSubmit} className="space-y-4">
+          <form id="service-form" onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Name <span className="text-red-500">*</span>
@@ -169,7 +140,7 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description <span className="text-red-500">*</span>
+              Description
             </label>
             <textarea
               name="description"
@@ -179,44 +150,10 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
               className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
                 errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
               }`}
-              required
             />
             {errors.description && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Service
-            </label>
-            <select
-              name="service"
-              value={formData.service}
-              onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-            >
-              <option value="">Select a service</option>
-              {services.map((service) => (
-                <option key={service._id} value={service._id}>
-                  {service.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Sort Order
-            </label>
-            <input
-              type="number"
-              name="sortOrder"
-              value={formData.sortOrder}
-              onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              min="0"
-            />
           </div>
 
           <div className="flex items-center">
@@ -246,10 +183,10 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
             </button>
             <button
               type="submit"
-              form="category-form"
+              form="service-form"
               className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
             >
-              {category ? 'Update' : 'Create'}
+              {service ? 'Update' : 'Create'}
             </button>
           </div>
         </div>
@@ -257,3 +194,4 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
     </div>
   );
 }
+
