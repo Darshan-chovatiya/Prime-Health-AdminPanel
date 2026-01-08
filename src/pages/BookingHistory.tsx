@@ -4,6 +4,7 @@ import swal from '../utils/swalHelper';
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+import FilterDropdown from '../components/ui/FilterDropdown';
 
 export default function BookingHistory() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -319,39 +320,47 @@ export default function BookingHistory() {
                 value={searchTerm}
                 onChange={setSearchTerm}
               />
-              <select 
+              <FilterDropdown
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'scheduled', label: 'Scheduled' },
+                  { value: 'confirmed', label: 'Confirmed' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                  { value: 'no-show', label: 'No Show' },
+                  { value: 'rescheduled', label: 'Rescheduled' },
+                ]}
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
-              >
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no-show">No Show</option>
-                <option value="rescheduled">Rescheduled</option>
-              </select>
-              <select 
+                onChange={setStatusFilter}
+                placeholder="All Status"
+                className="w-full sm:w-auto"
+              />
+              <FilterDropdown
+                options={[
+                  { value: 'all', label: 'All Doctors' },
+                  ...doctors.map((doctor) => ({
+                    value: doctor._id,
+                    label: `Dr. ${doctor.name}`,
+                  })),
+                ]}
                 value={doctorFilter}
-                onChange={(e) => setDoctorFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
-              >
-                <option value="all">All Doctors</option>
-                {doctors.map((doctor) => (
-                  <option key={doctor._id} value={doctor._id}>Dr. {doctor.name}</option>
-                ))}
-              </select>
-              <select 
+                onChange={setDoctorFilter}
+                placeholder="All Doctors"
+                className="w-full sm:w-auto"
+              />
+              <FilterDropdown
+                options={[
+                  { value: 'all', label: 'All Patients' },
+                  ...patients.map((patient) => ({
+                    value: patient._id,
+                    label: patient.name,
+                  })),
+                ]}
                 value={patientFilter}
-                onChange={(e) => setPatientFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
-              >
-                <option value="all">All Patients</option>
-                {patients.map((patient) => (
-                  <option key={patient._id} value={patient._id}>{patient.name}</option>
-                ))}
-              </select>
+                onChange={setPatientFilter}
+                placeholder="All Patients"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
 

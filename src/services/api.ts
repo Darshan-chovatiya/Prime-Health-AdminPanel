@@ -1,5 +1,5 @@
-export const API_BASE_URL = 'http://localhost:3300/api/admin';
-// export const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
+// export const API_BASE_URL = 'http://localhost:3300/api/admin';
+export const API_BASE_URL = 'https://primehealth.itfuturz.in/api/admin';
 // export const API_BASE_URL = 'https://t9hr21z3-3200.inc1.devtunnels.ms/api/admin';
 
 // Types

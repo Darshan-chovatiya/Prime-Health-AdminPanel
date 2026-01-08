@@ -5,6 +5,7 @@ import SlotModal from "../components/modals/SlotModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+import FilterDropdown from '../components/ui/FilterDropdown';
 import { useDebounce } from '../hooks';
 
 export default function Slots() {
@@ -264,26 +265,31 @@ export default function Slots() {
                 onChange={setSearchTerm}
                 debounceMs={500}
               />
-              <select 
+              <FilterDropdown
+                options={[
+                  { value: 'all', label: 'All Doctors' },
+                  ...doctors.map((doctor) => ({
+                    value: doctor._id,
+                    label: `Dr. ${doctor.name}`,
+                  })),
+                ]}
                 value={doctorFilter}
-                onChange={(e) => setDoctorFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
-              >
-                <option value="all">All Doctors</option>
-                {doctors.map((doctor) => (
-                  <option key={doctor._id} value={doctor._id}>Dr. {doctor.name}</option>
-                ))}
-              </select>
-              <select 
+                onChange={setDoctorFilter}
+                placeholder="All Doctors"
+                className="w-full sm:w-auto"
+              />
+              <FilterDropdown
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'available', label: 'Available' },
+                  { value: 'booked', label: 'Booked' },
+                  { value: 'blocked', label: 'Blocked' },
+                ]}
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
-              >
-                <option value="all">All Status</option>
-                <option value="available">Available</option>
-                <option value="booked">Booked</option>
-                <option value="blocked">Blocked</option>
-              </select>
+                onChange={setStatusFilter}
+                placeholder="All Status"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
 

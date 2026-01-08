@@ -4,6 +4,7 @@ import apiService, { DashboardStats, Doctor, Slot } from "../../services/api";
 import swal from '../../utils/swalHelper';
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
+import FilterDropdown from '../../components/ui/FilterDropdown';
 
 export default function Home() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -714,15 +715,17 @@ export default function Home() {
               </p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-              <select
+              <FilterDropdown
+                options={[
+                  { value: 'week', label: 'Week' },
+                  { value: 'month', label: 'Month' },
+                  { value: 'year', label: 'Year' },
+                ]}
                 value={barChartPeriod}
-                onChange={(e) => setBarChartPeriod(e.target.value as 'week' | 'month' | 'year')}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800 w-full sm:w-auto"
-              >
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-                <option value="year">Year</option>
-              </select>
+                onChange={(value) => setBarChartPeriod(value as 'week' | 'month' | 'year')}
+                placeholder="Month"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
           {barChartLoading ? (
@@ -759,15 +762,17 @@ export default function Home() {
               </p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-              <select
+              <FilterDropdown
+                options={[
+                  { value: 'week', label: 'Week' },
+                  { value: 'month', label: 'Month' },
+                  { value: 'year', label: 'Year' },
+                ]}
                 value={pieChartPeriod}
-                onChange={(e) => setPieChartPeriod(e.target.value as 'week' | 'month' | 'year')}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-gray-800 w-full sm:w-auto"
-              >
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-                <option value="year">Year</option>
-              </select>
+                onChange={(value) => setPieChartPeriod(value as 'week' | 'month' | 'year')}
+                placeholder="Month"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
           <div className="flex flex-col lg:flex-row items-center gap-6">

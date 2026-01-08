@@ -5,6 +5,7 @@ import ServiceModal from "../components/modals/ServiceModal";
 import ActionButton from '../components/ui/ActionButton';
 import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
+import FilterDropdown from '../components/ui/FilterDropdown';
 import { useDebounce } from '../hooks';
 import Swal from "sweetalert2";
 
@@ -228,15 +229,17 @@ export default function Services() {
                 onChange={setSearchTerm}
                 debounceMs={500}
               />
-              <select 
+              <FilterDropdown
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-gray-800 dark:bg-gray-900 dark:text-white w-full sm:w-auto"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+                onChange={setStatusFilter}
+                placeholder="All Status"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
 
