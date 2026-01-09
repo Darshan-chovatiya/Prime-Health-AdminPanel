@@ -148,6 +148,13 @@ export default function Slots() {
 
   const handleUpdateSlot = async (slotData: any) => {
     try {
+      // Prevent updating booked slots
+      if (editingSlot && editingSlot.status === 'booked') {
+        swal.error('Error', 'Booked slots cannot be updated.');
+        setEditingSlot(null);
+        return;
+      }
+      
       const response = await apiService.updateSlot(slotData);
       if (response.status === 200) {
         swal.success('Success!', 'Slot updated successfully.');
@@ -373,7 +380,15 @@ export default function Slots() {
                             <div className="flex space-x-2">
                               <ActionButton 
                                 type="edit"
-                                onClick={() => setEditingSlot(slot)}
+                                onClick={() => {
+                                  if (slot.status !== 'booked') {
+                                    setEditingSlot(slot);
+                                  } else {
+                                    swal.warning('Warning', 'Booked slots cannot be edited.');
+                                  }
+                                }}
+                                disabled={slot.status === 'booked'}
+                                title={slot.status === 'booked' ? 'Booked slots cannot be edited' : 'Edit slot'}
                               />
                               <ActionButton 
                                 type="delete"

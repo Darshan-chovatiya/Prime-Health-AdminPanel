@@ -5,13 +5,15 @@ interface ActionButtonProps {
   onClick: () => void;
   className?: string;
   disabled?: boolean;
+  title?: string;
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({ 
   type, 
   onClick, 
   className = '', 
-  disabled = false 
+  disabled = false,
+  title 
 }) => {
   const getButtonConfig = () => {
     switch (type) {
@@ -111,7 +113,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         disabled:opacity-50 disabled:cursor-not-allowed
         ${config.borderColor} ${config.iconColor} ${className}
       `}
-      title={type.charAt(0).toUpperCase() + type.slice(1)}
+      title={title || type.charAt(0).toUpperCase() + type.slice(1)}
     >
       {config.icon}
     </button>
