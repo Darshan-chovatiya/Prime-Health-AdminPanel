@@ -7,14 +7,16 @@ interface AdminModalProps {
   onClose: () => void;
   onSubmit: (adminData: any) => void;
   title: string;
+  currentUserRole?: "admin" | "super_admin";
 }
 
-export default function AdminModal({ admin, onClose, onSubmit, title }: AdminModalProps) {
+export default function AdminModal({ admin, onClose, onSubmit, title, currentUserRole }: AdminModalProps) {
+  const isCurrentUserAdmin = currentUserRole === 'admin';
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    role: "admin" as "admin" | "super_admin", // Always default to admin, managed only in frontend
+    role: "admin" as "admin" | "super_admin",
     isActive: true,
   });
 
@@ -25,6 +27,7 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
     name?: string;
     email?: string;
     password?: string;
+    role?: string;
   }>({});
 
   useEffect(() => {
@@ -33,7 +36,7 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
         name: admin.name,
         email: admin.email,
         password: "",
-        role: "admin", // Always set to admin, regardless of admin.role
+        role: admin.role || "admin",
         isActive: admin.isActive,
       });
     } else {
@@ -41,7 +44,7 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
         name: "",
         email: "",
         password: "",
-        role: "admin", // Always default to admin
+        role: "admin",
         isActive: true,
       });
     }
@@ -123,10 +126,15 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
       return;
     }
 
-    // Always set role to "admin" - managed only in frontend
+    // Prevent admin role from creating/updating to super_admin
+    if (isCurrentUserAdmin && formData.role === 'super_admin') {
+      setErrors({ ...errors, role: 'You do not have permission to set role to super admin.' });
+      return;
+    }
+
     const submitData = admin 
-      ? { id: admin._id, ...formData, role: "admin" }
-      : { ...formData, role: "admin" };
+      ? { id: admin._id, ...formData }
+      : { ...formData };
 
     onSubmit(submitData);
   };
@@ -220,6 +228,37 @@ export default function AdminModal({ admin, onClose, onSubmit, title }: AdminMod
             </div>
             {errors.password && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Role <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleInputChange}
+              disabled={isCurrentUserAdmin}
+              className={`w-full rounded-lg border bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-1 ${
+                errors.role ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500'
+              } ${
+                isCurrentUserAdmin 
+                  ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-75' 
+                  : ''
+              }`}
+              required
+            >
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+            {errors.role && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.role}</p>
+            )}
+            {isCurrentUserAdmin && (
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                You do not have permission to create or change role to super admin.
+              </p>
             )}
           </div>
 

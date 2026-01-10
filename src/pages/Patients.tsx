@@ -282,13 +282,19 @@ export default function Patients() {
     }
 
     if (fieldType === 'emergencyContact') {
-      // Emergency contact: if any field is provided, all are required
+      // Relationship is always required if any emergency contact field is provided
+      // If any field is provided, all are required
       const hasAnyField = formData.emergencyContact.name || formData.emergencyContact.relationship || formData.emergencyContact.mobileNo;
+      
+      if (name === 'relationship') {
+        // Relationship is always required if any emergency contact field is provided
+        if (hasAnyField && !value?.trim()) return 'Emergency contact relationship is required';
+        if (value?.trim() && value.trim().length < 2) return 'Emergency contact relationship must be at least 2 characters';
+      }
+      
       if (hasAnyField) {
         if (name === 'name' && !value?.trim()) return 'Emergency contact name is required';
         if (name === 'name' && value?.trim().length < 2) return 'Emergency contact name must be at least 2 characters';
-        if (name === 'relationship' && !value?.trim()) return 'Emergency contact relationship is required';
-        if (name === 'relationship' && value?.trim().length < 2) return 'Emergency contact relationship must be at least 2 characters';
         if (name === 'mobileNo' && !value?.trim()) return 'Emergency contact mobile number is required';
         if (name === 'mobileNo' && !/^[0-9]{10}$/.test(value?.trim() || '')) return 'Emergency contact mobile number must be exactly 10 digits';
       }
@@ -464,15 +470,54 @@ export default function Patients() {
         formData.address.country?.trim()
       );
     } else {
-      // For update: name and address are required
+      // For update: name, dateOfBirth, gender, and address are required
       return !!(
         formData.name?.trim() &&
         formData.name.trim().length >= 2 &&
+        formData.dateOfBirth &&
+        formData.gender &&
+        ['male', 'female', 'other'].includes(formData.gender) &&
         formData.address.street?.trim() &&
         formData.address.city?.trim() &&
         formData.address.state?.trim() &&
         formData.address.country?.trim()
       );
+    }
+  };
+
+  // Function to scroll to the first error field
+  const scrollToFirstError = () => {
+    // Find the first element with an error message displayed
+    // Error messages have the class "text-red-600" or "text-red-400"
+    const errorMessages = document.querySelectorAll('.text-red-600, .text-red-400');
+    
+    if (errorMessages.length > 0) {
+      // Get the first error message
+      const firstError = errorMessages[0] as HTMLElement;
+      // Find the input/select element associated with this error
+      // The error message is usually in the same parent container as the input
+      const fieldContainer = firstError.closest('div');
+      if (fieldContainer) {
+        const inputElement = fieldContainer.querySelector('input, select') as HTMLElement;
+        if (inputElement) {
+          inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Focus the field after a short delay to ensure scroll is complete
+          setTimeout(() => {
+            inputElement.focus();
+          }, 300);
+          return;
+        }
+      }
+    }
+
+    // Fallback: Find first input/select with red border (error state)
+    const errorInputs = document.querySelectorAll('input.border-red-500, select.border-red-500');
+    if (errorInputs.length > 0) {
+      const firstErrorInput = errorInputs[0] as HTMLElement;
+      firstErrorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        firstErrorInput.focus();
+      }, 300);
     }
   };
 
@@ -519,6 +564,10 @@ export default function Patients() {
     
     // Check if form is valid
     if (Object.keys(validationErrors).length > 0) {
+      // Scroll to the first error field
+      setTimeout(() => {
+        scrollToFirstError();
+      }, 100);
       return;
     }
 
@@ -930,9 +979,14 @@ export default function Patients() {
                     name="name" 
                     value={formData.emergencyContact.name} 
                     onChange={handleEmergencyChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.emergencyContact?.name ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter name"
                   />
+                  {errors.emergencyContact?.name && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.emergencyContact.name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Relationship</label>
@@ -940,9 +994,14 @@ export default function Patients() {
                     name="relationship" 
                     value={formData.emergencyContact.relationship} 
                     onChange={handleEmergencyChange} 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.emergencyContact?.relationship ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter relationship"
                   />
+                  {errors.emergencyContact?.relationship && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.emergencyContact.relationship}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mobile No</label>
@@ -957,10 +1016,15 @@ export default function Patients() {
                       }
                     }} 
                     pattern="[0-9]{10}" 
-                    className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-green-500" 
+                    className={`w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 ${
+                      errors.emergencyContact?.mobileNo ? 'border-red-500 focus:ring-red-500' : 'focus:ring-green-500'
+                    }`}
                     placeholder="Enter 10-digit mobile number (numbers only)"
                     maxLength={10}
                   />
+                  {errors.emergencyContact?.mobileNo && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.emergencyContact.mobileNo}</p>
+                  )}
                 </div>
               </div>
             </div>

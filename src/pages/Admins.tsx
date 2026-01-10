@@ -7,8 +7,10 @@ import SearchInput from '../components/ui/SearchInput';
 import PaginationControls from '../components/ui/PaginationControls';
 import FilterDropdown from '../components/ui/FilterDropdown';
 import { useDebounce } from '../hooks';
+import { useAuth } from '../context/AuthContext';
 
 export default function Admins() {
+  const { user: currentUser } = useAuth();
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -16,6 +18,7 @@ export default function Admins() {
   const [searchTerm, setSearchTerm] = useState("");
   
   const [statusFilter, setStatusFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalDocs, setTotalDocs] = useState(0);
@@ -26,13 +29,17 @@ export default function Admins() {
 
   // Debounced values - only for filters since SearchInput handles search debouncing
   const debouncedStatusFilter = useDebounce(statusFilter, 300);
+  const debouncedRoleFilter = useDebounce(roleFilter, 300);
+  
+  // Check if current user is admin (not super_admin)
+  const isCurrentUserAdmin = currentUser?.role === 'admin';
 
   // Reset to first page when filters change
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [searchTerm, debouncedStatusFilter]);
+  }, [searchTerm, debouncedStatusFilter, debouncedRoleFilter]);
 
   useEffect(() => {
     fetchAdminStats();
@@ -40,7 +47,7 @@ export default function Admins() {
 
   useEffect(() => {
     fetchAdmins();
-  }, [currentPage, searchTerm, debouncedStatusFilter, limit]);
+  }, [currentPage, searchTerm, debouncedStatusFilter, debouncedRoleFilter, limit]);
 
 
   const fetchAdmins = async () => {
@@ -56,6 +63,7 @@ export default function Admins() {
         limit: limit,
         search: searchTerm,
         status: debouncedStatusFilter === 'all' ? undefined : debouncedStatusFilter,
+        role: debouncedRoleFilter === 'all' ? undefined : debouncedRoleFilter,
       });
       
       if (response.data && response.data.docs) {
@@ -82,6 +90,13 @@ export default function Admins() {
   };
 
   const handleDeleteAdmin = async (adminId: string, adminName: string) => {
+    // Check if trying to delete super admin and current user is admin
+    const adminToDelete = admins.find(a => a._id === adminId);
+    if (isCurrentUserAdmin && adminToDelete?.role === 'super_admin') {
+      swal.error('Error', 'You do not have permission to delete super admin accounts.');
+      return;
+    }
+
     const result = await swal.confirm('Are you sure?', `Delete admin ${adminName}?`);
 
     if (result.isConfirmed) {
@@ -97,6 +112,12 @@ export default function Admins() {
   };
 
   const handleCreateAdmin = async (adminData: any) => {
+    // Prevent admin role from creating super admin
+    if (isCurrentUserAdmin && adminData.role === 'super_admin') {
+      swal.error('Error', 'You do not have permission to create super admin accounts.');
+      return;
+    }
+
     try {
       await apiService.createAdmin(adminData);
       swal.success('Success!', 'Admin created successfully.');
@@ -109,6 +130,19 @@ export default function Admins() {
   };
 
   const handleUpdateAdmin = async (adminData: any) => {
+    // Prevent admin role from updating super admin
+    if (editingAdmin && isCurrentUserAdmin && editingAdmin.role === 'super_admin') {
+      swal.error('Error', 'You do not have permission to update super admin accounts.');
+      setEditingAdmin(null);
+      return;
+    }
+
+    // Prevent admin role from changing role to super_admin
+    if (isCurrentUserAdmin && adminData.role === 'super_admin') {
+      swal.error('Error', 'You do not have permission to change role to super admin.');
+      return;
+    }
+
     try {
       await apiService.updateAdmin(adminData);
       swal.success('Success!', 'Admin updated successfully.');
@@ -121,6 +155,13 @@ export default function Admins() {
   };
 
   const handleToggleStatus = async (adminId: string, currentStatus: boolean) => {
+    // Prevent admin role from toggling super admin status
+    const adminToToggle = admins.find(a => a._id === adminId);
+    if (isCurrentUserAdmin && adminToToggle?.role === 'super_admin') {
+      swal.error('Error', 'You do not have permission to change super admin status.');
+      return;
+    }
+
     try {
       await apiService.toggleAdminStatus(adminId, !currentStatus);
       swal.success('Success!', `Admin ${!currentStatus ? 'activated' : 'deactivated'} successfully.`);
@@ -161,7 +202,7 @@ export default function Admins() {
         
         <div className="space-y-6">
           {/* Admin Stats Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
               <div className="flex items-center justify-between">
                 <div>
@@ -189,6 +230,22 @@ export default function Admins() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20">
                   <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Super Admins</p>
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
+                    {stats?.superAdmins?.toLocaleString() || '0'}
+                  </p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/20">
+                  <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
               </div>
@@ -231,6 +288,17 @@ export default function Admins() {
                 placeholder="All Status"
                 className="w-full sm:w-auto"
               />
+              <FilterDropdown
+                options={[
+                  { value: 'all', label: 'All Roles' },
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'super_admin', label: 'Super Admin' },
+                ]}
+                value={roleFilter}
+                onChange={setRoleFilter}
+                placeholder="All Roles"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
 
@@ -249,6 +317,7 @@ export default function Admins() {
                 <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Admin</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Role</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Last Login</th>
                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
@@ -295,13 +364,38 @@ export default function Admins() {
                         </td>
                         <td className="px-6 py-4">
                           <span 
-                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors duration-200 hover:opacity-80 ${
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                              admin.role === 'super_admin'
+                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
+                            }`}
+                          >
+                            {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span 
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium transition-colors duration-200 ${
                               admin.isActive 
                                 ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
                                 : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                            } ${
+                              isCurrentUserAdmin && admin.role === 'super_admin'
+                                ? 'cursor-not-allowed opacity-50'
+                                : 'cursor-pointer hover:opacity-80'
                             }`}
-                            onClick={() => handleToggleStatus(admin._id, admin.isActive)}
-                            title={`Click to ${admin.isActive ? 'deactivate' : 'activate'} admin`}
+                            onClick={() => {
+                              if (!(isCurrentUserAdmin && admin.role === 'super_admin')) {
+                                handleToggleStatus(admin._id, admin.isActive);
+                              } else {
+                                swal.warning('Warning', 'You do not have permission to change super admin status.');
+                              }
+                            }}
+                            title={
+                              isCurrentUserAdmin && admin.role === 'super_admin'
+                                ? 'You cannot change super admin status'
+                                : `Click to ${admin.isActive ? 'deactivate' : 'activate'} admin`
+                            }
                           >
                             {admin.isActive ? 'Active' : 'Inactive'}
                           </span>
@@ -313,11 +407,21 @@ export default function Admins() {
                           <div className="flex space-x-2">
                             <ActionButton 
                               type="edit"
-                              onClick={() => setEditingAdmin(admin)}
+                              onClick={() => {
+                                if (isCurrentUserAdmin && admin.role === 'super_admin') {
+                                  swal.warning('Warning', 'You do not have permission to edit super admin accounts.');
+                                } else {
+                                  setEditingAdmin(admin);
+                                }
+                              }}
+                              disabled={isCurrentUserAdmin && admin.role === 'super_admin'}
+                              title={isCurrentUserAdmin && admin.role === 'super_admin' ? 'You cannot edit super admin accounts' : 'Edit admin'}
                             />
                             <ActionButton 
                               type="delete"
                               onClick={() => handleDeleteAdmin(admin._id, admin.name)}
+                              disabled={isCurrentUserAdmin && admin.role === 'super_admin'}
+                              title={isCurrentUserAdmin && admin.role === 'super_admin' ? 'You cannot delete super admin accounts' : 'Delete admin'}
                             />
                           </div>
                         </td>
@@ -325,7 +429,7 @@ export default function Admins() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                         No admins found
                       </td>
                     </tr>
@@ -353,6 +457,7 @@ export default function Admins() {
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateAdmin}
           title="Create New Admin"
+          currentUserRole={currentUser?.role}
         />
       )}
 
@@ -363,6 +468,7 @@ export default function Admins() {
           onClose={() => setEditingAdmin(null)}
           onSubmit={handleUpdateAdmin}
           title="Edit Admin"
+          currentUserRole={currentUser?.role}
         />
       )}
     </>

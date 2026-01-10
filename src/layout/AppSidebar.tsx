@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { LayoutDashboard, Shield, Users, Grid, Stethoscope, CalendarClock, History, UserCircle, LogOut, Activity } from 'lucide-react';
+import { LayoutDashboard,  Users, Grid, Stethoscope, CalendarClock, History, UserCircle, LogOut, Activity } from 'lucide-react';
 import {
   ChevronDownIcon,
   HorizontaLDots,
@@ -31,11 +31,11 @@ const getNavItems = (handleLogout: () => void): NavItem[] => [
     name: "Dashboard",
     path: "/",
   },
-  {
-    icon: <Shield />,
-    name: "Admins",
-    path: "/admins",
-  },
+  // {
+  //   icon: <Shield />,
+  //   name: "Admins",
+  //   path: "/admins",
+  // },
   {
     icon: <Users />,
     name: "Patients",

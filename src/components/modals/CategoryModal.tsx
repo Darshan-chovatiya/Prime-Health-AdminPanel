@@ -102,7 +102,7 @@ export default function CategoryModal({ category, onClose, onSubmit, title }: Ca
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
+     
     // Validate the field
     const error = validateField(name, value);
     setErrors({ ...errors, [name]: error || undefined });
